@@ -1,6 +1,7 @@
 import { useState } from "react";
 import api from "../services/api";
 import { useNavigate } from "react-router-dom";
+import "../css/Login.css";
 
 function Login() {
 
@@ -37,36 +38,51 @@ function Login() {
     }
 
     return (
-        <div>
+        <div className="login-page">
+            <div className="login-card">
 
-            <h1>Login</h1>
+                <div className="login-brand">
+                    <div className="login-brand-icon">
+                        <span>G</span>
+                    </div>
+                    <h1 className="login-title">GRB OFICE</h1>
+                    <p className="login-subtitle">Faça login para acessar o painel</p>
+                </div>
 
-            <form onSubmit={fazerLogin}>
-                <input
-                    type="email"
-                    placeholder="Digite seu email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                />
+                <form className="login-form" onSubmit={fazerLogin}>
+                    <div className="input-group">
+                        <label htmlFor="email">E-mail</label>
+                        <input
+                            id="email"
+                            type="email"
+                            placeholder="Digite seu email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+                    </div>
 
-                <br />
-                <br />
+                    <div className="input-group">
+                        <label htmlFor="senha">Senha</label>
+                        <input
+                            id="senha"
+                            type="password"
+                            placeholder="Digite sua senha"
+                            value={senha}
+                            onChange={(e) => setSenha(e.target.value)}
+                        />
+                    </div>
 
-                <input
-                    type="password"
-                    placeholder="Digite sua senha"
-                    value={senha}
-                    onChange={(e) => setSenha(e.target.value)}
-                />
+                    <button className="login-btn" type="submit">
+                        Entrar
+                    </button>
+                </form>
 
-                <br />
-                <br />
-
-                <button type="submit">Entrar</button>
-            </form>
-
+                <div className="login-footer">
+                    <p>© 2026 GRB Ofice — Todos os direitos reservados</p>
+                </div>
+            </div>
         </div>
-    )
+    );
 }
 
 export default Login;
