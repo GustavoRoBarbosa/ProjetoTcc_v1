@@ -50,6 +50,34 @@ def login(request):
             'sucess': False,
             'message': 'Usuario não encontrado'
         })
+    
+
+@api_view(['POST'])
+def cadastrar(request):
+
+    nome = request.data.get('nome')
+    email = request.data.get('email')
+    senha = request.data.get('senha')
+    telefone = request.data.get('telefone')
+
+    if Usuario.objects.filter(emailUsu=email).exists():
+
+        return Response({
+            'success': False,
+            'message': 'Email já cadastrado'
+        })
+
+    usuario = Usuario.objects.create(
+        nomUsu=nome,
+        emailUsu=email,
+        senUsu=senha,
+        telUsu=telefone
+    )
+
+    return Response({
+        'success': True,
+        'message': 'Usuário cadastrado com sucesso'
+    })
 
 
 

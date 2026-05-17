@@ -1,6 +1,7 @@
 import { useState } from "react";
 import api from "../services/api";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import "../css/Login.css";
 
 function Login() {
@@ -75,6 +76,10 @@ function Login() {
                     <button className="login-btn" type="submit">
                         Entrar
                     </button>
+
+                    <Link to="/cadastro">
+                        Cadastre-se
+                    </Link>
                 </form>
 
                 <div className="login-footer">
