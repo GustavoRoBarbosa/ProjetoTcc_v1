@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-
+import { useNavigate, Link } from "react-router-dom";
 import api from "../services/api";
+import "../css/Cadastro.css";
 
 function Cadastro() {
 
@@ -26,81 +26,93 @@ function Cadastro() {
             });
 
             if (response.data.success) {
-
                 alert("Cadastro realizado com sucesso");
-
                 navigate("/");
-
             } else {
-
                 alert(response.data.message);
-
             }
 
         } catch (error) {
-
             console.log(error);
-
             alert("Erro ao cadastrar");
-
         }
     }
 
     return (
+        <div className="cadastro-page">
+            <div className="cadastro-card">
 
-        <div>
+                <div className="cadastro-brand">
+                    <div className="cadastro-brand-icon">
+                        <span>G</span>
+                    </div>
+                    <h1 className="cadastro-title">Criar Conta</h1>
+                    <p className="cadastro-subtitle">Preencha os dados para se cadastrar</p>
+                </div>
 
-            <h1>Cadastro</h1>
+                <form className="cadastro-form" onSubmit={cadastrarUsuario}>
 
-            <form onSubmit={cadastrarUsuario}>
+                    <div className="input-group">
+                        <label htmlFor="nome">Nome completo</label>
+                        <input
+                            id="nome"
+                            type="text"
+                            placeholder="Digite seu nome"
+                            value={nome}
+                            onChange={(e) => setNome(e.target.value)}
+                        />
+                    </div>
 
-                <input
-                    type="text"
-                    placeholder="Nome"
-                    value={nome}
-                    onChange={(e) => setNome(e.target.value)}
-                />
+                    <div className="input-group">
+                        <label htmlFor="email">E-mail</label>
+                        <input
+                            id="email"
+                            type="email"
+                            placeholder="Digite seu email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+                    </div>
 
-                <br />
-                <br />
+                    <div className="cadastro-form-row">
+                        <div className="input-group">
+                            <label htmlFor="senha">Senha</label>
+                            <input
+                                id="senha"
+                                type="password"
+                                placeholder="Crie uma senha"
+                                value={senha}
+                                onChange={(e) => setSenha(e.target.value)}
+                            />
+                        </div>
 
-                <input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                />
+                        <div className="input-group">
+                            <label htmlFor="telefone">Telefone</label>
+                            <input
+                                id="telefone"
+                                type="text"
+                                placeholder="(00) 00000-0000"
+                                value={telefone}
+                                onChange={(e) => setTelefone(e.target.value)}
+                            />
+                        </div>
+                    </div>
 
-                <br />
-                <br />
+                    <button className="cadastro-btn" type="submit">
+                        Cadastrar
+                    </button>
 
-                <input
-                    type="password"
-                    placeholder="Senha"
-                    value={senha}
-                    onChange={(e) => setSenha(e.target.value)}
-                />
+                    <p className="cadastro-login-link">
+                        Já tem uma conta? <Link to="/">Fazer login</Link>
+                    </p>
 
-                <br />
-                <br />
+                </form>
 
-                <input
-                    type="text"
-                    placeholder="Telefone"
-                    value={telefone}
-                    onChange={(e) => setTelefone(e.target.value)}
-                />
+                <div className="cadastro-footer">
+                    <p>© 2026 GRB Ofice — Todos os direitos reservados</p>
+                </div>
 
-                <br />
-                <br />
-
-                <button type="submit">
-                    Cadastrar
-                </button>
-                
-
-            </form>
-
+            </div>
         </div>
     );
 }
