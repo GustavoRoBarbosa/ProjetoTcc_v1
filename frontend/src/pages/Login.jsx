@@ -22,7 +22,7 @@ function Login() {
                 senha
             });
 
-            if (response.data.sucess) {
+            if (response.data.success) {
                 localStorage.setItem(
                     "usuario",
                     JSON.stringify(response.data.usuario)

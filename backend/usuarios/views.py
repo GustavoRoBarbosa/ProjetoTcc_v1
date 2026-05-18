@@ -1,6 +1,8 @@
 from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from django.contrib.auth.hashers import make_password, check_password
+import re
 from .models import Usuario
 
 
@@ -18,6 +20,8 @@ def listar_usuarios(request):
             'email': usuario.emailUsu,
             'tipo': usuario.tipoUsu
         })
+        
+        return Response (dados)
 
 
 @api_view(['POST'])
@@ -27,11 +31,11 @@ def login(request):
     senha = request.data.get('senha')
 
     try:
-        usuario = Usuario.objects.get(emailUsu=email)
+        usuario = Usuario.objects.get(emailUsu=email, ativo = True)
 
-        if usuario.senUsu == senha:
+        if check_password(senha, usuario.senUsu):
             return Response({
-                'sucess': True,
+                'success': True,
                 'usuario': {
                     'id': usuario.idUsu,
                     'nome': usuario.nomUsu,
@@ -41,13 +45,13 @@ def login(request):
             })
         
         return Response({
-            'sucess': False,
+            'success': False,
             'message': 'Senha invalida'
         })
     except Usuario.DoesNotExist:
 
         return Response({
-            'sucess': False,
+            'success': False,
             'message': 'Usuario não encontrado'
         })
     
@@ -59,6 +63,36 @@ def cadastrar(request):
     email = request.data.get('email')
     senha = request.data.get('senha')
     telefone = request.data.get('telefone')
+    
+    
+    
+    if not nome or nome.strip() == '':
+
+        return Response({
+            'success': False,
+            'message': 'O nome é obrigatório'
+        })
+
+    if not email or email.strip() == '':
+
+        return Response({
+            'success': False,
+            'message': 'O email é obrigatório'
+        })
+
+    if not senha or senha.strip() == '':
+
+        return Response({
+            'success': False,
+            'message': 'A senha é obrigatória'
+        })
+
+    if not telefone or telefone.strip() == '':
+
+        return Response({
+            'success': False,
+            'message': 'O telefone é obrigatório'
+        })
 
     if Usuario.objects.filter(emailUsu=email).exists():
 
@@ -66,19 +100,71 @@ def cadastrar(request):
             'success': False,
             'message': 'Email já cadastrado'
         })
+        
+        
+    regex_email = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+
+    if not re.match(regex_email, email):
+
+        return Response({
+            'success': False,
+            'message': 'Email inválido'
+        })
+    
+    if len(senha) < 8:
+
+        return Response({
+            'success': False,
+            'message': 'A senha deve possuir pelo menos 8 caracteres'
+        })
+
+    if not re.search(r'[A-Z]', senha):
+
+        return Response({
+            'success': False,
+            'message': 'A senha deve possuir uma letra maiúscula'
+        })
+
+    if not re.search(r'[a-z]', senha):
+
+        return Response({
+            'success': False,
+            'message': 'A senha deve possuir uma letra minúscula'
+        })
+
+    if not re.search(r'[0-9]', senha):
+
+        return Response({
+            'success': False,
+            'message': 'A senha deve possuir um número'
+        })
+
+    if not re.search(r'[\W_]', senha):
+
+        return Response({
+            'success': False,
+            'message': 'A senha deve possuir um caractere especial'
+        })
+        
+    telefone = re.sub(r'\D', '', telefone)
+    
+    if len(telefone) != 11:
+
+        return Response({
+            'success': False,
+            'message': 'Telefone inválido'
+        })
+    
+    telefone_formatado = f'({telefone[:2]}) {telefone[2:7]}-{telefone[7:]}'
 
     usuario = Usuario.objects.create(
         nomUsu=nome,
         emailUsu=email,
-        senUsu=senha,
-        telUsu=telefone
+        senUsu=make_password(senha),
+        telUsu=telefone_formatado
     )
 
     return Response({
         'success': True,
-        'message': 'Usuário cadastrado com sucesso'
+        'message': 'Usuário cadastrado com successo'
     })
-
-
-
-    return Response(dados)

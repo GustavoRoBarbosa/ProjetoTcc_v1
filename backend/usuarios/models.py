@@ -8,9 +8,9 @@ class Usuario(models.Model):
     )
 
     idUsu = models.AutoField(primary_key=True)
-    nomUsu = models.CharField(max_length=45)
+    nomUsu = models.CharField(max_length=45, blank=False)
     emailUsu = models.EmailField(max_length=45, unique=True)
-    senUsu = models.CharField(max_length=20)
+    senUsu = models.CharField(max_length=255)
     telUsu = models.CharField(max_length=20)
     tipoUsu = models.CharField(max_length=20, choices=TIPO_USUARIO, default='cliente')
     ativo = models.BooleanField(default=True)

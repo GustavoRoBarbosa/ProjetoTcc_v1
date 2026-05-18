@@ -16,6 +16,42 @@ function Cadastro() {
 
         e.preventDefault();
 
+        if (!nome.trim()) {
+
+            alert("O nome é obrigatório");
+
+            return;
+        }
+
+        if (!email.trim()) {
+
+            alert("O email é obrigatório");
+
+            return;
+        }
+
+        if (!telefone.trim()) {
+
+            alert("O telefone é obrigatório");
+
+            return;
+        }
+
+
+        const regexSenha = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+
+        if (!regexSenha.test(senha)) {
+            alert(
+            "A senha deve possuir:\n\n" +
+            "- 8 caracteres\n" +
+            "- letra maiúscula\n" +
+            "- letra minúscula\n" +
+            "- número\n" +
+            "- caractere especial"
+            );
+            return;
+        }
+
         try {
 
             const response = await api.post("cadastro/", {
@@ -60,6 +96,7 @@ function Cadastro() {
                             placeholder="Digite seu nome"
                             value={nome}
                             onChange={(e) => setNome(e.target.value)}
+                            required
                         />
                     </div>
 
@@ -71,6 +108,7 @@ function Cadastro() {
                             placeholder="Digite seu email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            required
                         />
                     </div>
 
@@ -83,6 +121,7 @@ function Cadastro() {
                                 placeholder="Crie uma senha"
                                 value={senha}
                                 onChange={(e) => setSenha(e.target.value)}
+                                required
                             />
                         </div>
 
@@ -92,8 +131,19 @@ function Cadastro() {
                                 id="telefone"
                                 type="text"
                                 placeholder="(00) 00000-0000"
+                                maxLength={15}
                                 value={telefone}
-                                onChange={(e) => setTelefone(e.target.value)}
+                                onChange={(e) => {let valor = e.target.value;
+
+                                    valor = valor.replace(/\D/g, '');
+
+                                    valor = valor.replace(/^(\d{2})(\d)/g, '($1) $2');
+
+                                    valor = valor.replace(/(\d{5})(\d)/, '$1-$2');
+
+                                    setTelefone(valor);
+                                }}
+                                required
                             />
                         </div>
                     </div>
