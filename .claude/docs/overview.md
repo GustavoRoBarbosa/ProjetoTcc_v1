@@ -1,0 +1,152 @@
+# Visão geral — ProjetoTcc_v1 ("GRB OFICE")
+
+## O que é
+
+Projeto de TCC (trabalho de conclusão de curso) full-stack: um painel de gestão
+("GRB OFICE"). O usuário decidiu, com tempo de sobra antes da banca, corrigir
+bugs e robustecer a base (banco/backend/autenticação) antes de partir para o
+catálogo de peças.
+
+Estado em 2026-07-30: oito rodadas de trabalho concluídas nesta sessão:
+
+1. Correção de bugs conhecidos (listar_usuarios, badge admin/adm).
+2. Banco/backend mais robusto (migrations reais, credenciais fora do código).
+3. Autenticação JWT de verdade (antes só existia um "login" que salvava dado
+   em `localStorage`, sem validação nenhuma no backend).
+4. Catálogo de peças completo: models (Categoria/Fornecedor/Peça com upload
+   de imagem), API REST com permissões por tipo de usuário, e as telas
+   correspondentes no frontend. Depois refinado com regras de negócio mais
+   rígidas (campos obrigatórios, validação de telefone) a partir de feedback
+   de uso real.
+5. Upgrade de schema: remoção de tabelas órfãs (`produtos` e a cadeia de
+   carrinho/pedido que dependia dela — resquício de uma modelagem anterior,
+   nunca integrada ao Django), soft delete (`ativo`/`excluido_em`) + trilha
+   de auditoria (`auditoria.LogAtividade`) em todo o catálogo.
+6. Dashboard com dados reais (peças no catálogo, peças para repor, usuários
+   ativos) e duas telas novas só para admin: **Usuários** (conceder/revogar
+   `pode_gerenciar_pecas` de um funcionário pela interface) e **Log de
+   Atividades** (visualizar o que o `auditoria.LogAtividade` já vinha
+   registrando).
+7. Confirmação de email no cadastro (conta fica bloqueada até clicar no
+   link recebido) e login com Google (Google Identity Services no
+   frontend + verificação do ID token no backend via `google-auth`), mais
+   um botão de mostrar/ocultar senha no Login e no Cadastro. Gmail SMTP
+   real já configurado e testado (envio de verdade, não só console).
+8. "Esqueci minha senha" (link por email, mesma arquitetura de token da
+   confirmação de cadastro, validade de 1h) e exibição da senha digitada
+   no card "Informações do Usuário" do Dashboard — guardada só na memória
+   da aba (`services/sessaoSenha.js`), nunca em disco, com toggle
+   mostrar/ocultar. Durante a configuração do Gmail nesta rodada,
+   surgiram 2 problemas reais de infraestrutura local (não do código):
+   processos `runserver` órfãos no Windows segurando credenciais antigas
+   em memória, e a exigência de manter a verificação em duas etapas
+   sempre ativa pra senhas de app do Gmail continuarem válidas — ambos
+   documentados em backend.md/known-issues.md.
+
+Durante os testes manuais (feitos pelo usuário no navegador), apareceram e
+foram corrigidos vários bugs reais — ver `known-issues.md`, seção "Resolvido".
+
+## Stack
+
+- **Backend**: Django 6.0.5 + Django REST Framework 3.17.1, MySQL (via
+  mysqlclient), django-cors-headers, PyJWT (autenticação), google-auth
+  (verificação do login Google), python-decouple (config via `.env`),
+  Pillow (upload de imagem). Apps: `usuarios` (contas), `catalogo`
+  (peças/categorias/fornecedores) e `auditoria` (log de atividades).
+- **Frontend**: Create React App, React 19.2.6, react-router-dom 7.15.1, axios 1.16.1.
+  CSS puro (sem framework de UI).
+
+## Arquitetura
+
+SPA React consumindo uma API REST exposta pelo Django sob `/api/`.
+
+Autenticação por **JWT customizado** (implementado com PyJWT, não o
+`djangorestframework-simplejwt` "oficial" — ver known-issues.md para o
+porquê): login retorna um par de tokens (access de 30 min, refresh de 7
+dias); o frontend guarda ambos e anexa o access token em todo request
+protegido; um interceptor renova automaticamente quando ele expira.
+Endpoints públicos (login/cadastro/refresh) são explicitamente excluídos
+de receber esse header — ver known-issues.md para o bug que isso evitou.
+Detalhes em [frontend.md](frontend.md) e [backend.md](backend.md).
+
+**Cadastro com confirmação de email + login com Google**: contas criadas
+por email/senha nascem bloqueadas (`email_confirmado=False`) até clicar
+no link recebido por email (`FRONTEND_URL/confirmar-email?token=...`,
+token JWT de 48h). Contas via "Entrar com Google" pulam essa etapa (o
+Google já validou o email) e nascem/vinculam automaticamente no primeiro
+login. Ver [backend.md](backend.md) para o fluxo completo dos dois.
+
+Autorização por permissão granular: `adm` sempre pode gerenciar o catálogo;
+`funcionario` só se um admin conceder (`pode_gerenciar_pecas`); `cliente`
+nunca. A permissão é checada a cada requisição direto no banco — revogar
+tem efeito imediato, sem precisar deslogar.
+
+**Soft delete + auditoria**: nenhum registro do catálogo (peça, categoria,
+fornecedor) é apagado de verdade pela API — "excluir" marca `ativo=False`
+e `excluido_em=<momento da exclusão>`, e o item some das listagens sem
+sumir do banco. Toda criação/edição/exclusão no catálogo, além de
+autocadastro de usuário e concessão/revogação de permissão, gera uma
+entrada em `auditoria.LogAtividade` (quem fez, quando, o quê), consultável
+só por admin em `GET /api/logs/`.
+
+Convenção da API: endpoints de negócio (login/cadastro/refresh) sempre
+respondem HTTP 200 com corpo `{success: bool, message?: str, ...}` — o
+frontend confere `success`, não o status HTTP. Já o catálogo (ViewSets do
+DRF) segue a convenção REST padrão de status HTTP (200/201/204/401/403/404).
+Erros de autenticação usam 401; erros de permissão (autenticado mas sem
+autorização) usam 403.
+
+## Estrutura do repositório
+
+```
+backend/
+  core/            settings, urls, wsgi/asgi (projeto Django "core")
+  usuarios/        contas/autenticação: model Usuario, views, urls, auth.py, permissions.py
+  catalogo/        peças: models (Categoria/Fornecedor/Peca), serializers, views (ViewSets), urls
+  auditoria/        log de atividades: model LogAtividade, serializers, views, urls
+  manage.py
+  requirements.txt
+  .env             configs locais, inclui credenciais de email e Google Client ID (não versionado)
+  .env.example     nomes das variáveis de ambiente esperadas (versionado)
+  media/           uploads de imagem de peça (não versionado, gerado em runtime)
+
+frontend/
+  .env             REACT_APP_GOOGLE_CLIENT_ID (não versionado)
+  src/
+    pages/         Login.jsx, Cadastro.jsx, ConfirmarEmail.jsx, Dashboard.jsx, Pecas.jsx,
+                    Categorias.jsx, Fornecedores.jsx, Usuarios.jsx (admin), Logs.jsx (admin)
+    components/    Sidebar.jsx
+    routes/        PrivateRoute.jsx (guarda de rota autenticada)
+    services/      api.js (instância axios + interceptors de JWT)
+    css/           um CSS por página/componente + Catalogo.css compartilhado
+  package.json
+
+.venv/             virtualenv Python do backend
+```
+
+## Escopo atual das features
+
+- Cadastro de usuário (`/cadastro`) com validação de senha forte, telefone BR,
+  e-mail único, e confirmação por email obrigatória antes de conseguir logar.
+- Login (`/`) por e-mail + senha (com botão de mostrar/ocultar senha) ou
+  por conta Google, com autenticação JWT real (access/refresh tokens,
+  endpoints protegidos no backend) nos dois casos.
+- Dashboard (`/dashboard`, rota protegida) — cards com dados reais: total
+  de peças, peças para repor, usuários ativos.
+- **Catálogo de peças** (`/pecas`, `/categorias`, `/fornecedores`, todas
+  protegidas): CRUD completo de peças (código, nome, descrição, preço,
+  estoque, estoque mínimo, nível de prioridade, categoria, fornecedor e
+  imagem — todos obrigatórios), categorias (nome + descrição obrigatória) e
+  fornecedores (nome + telefone ou e-mail obrigatório). Leitura liberada a
+  qualquer usuário logado; escrita (criar/editar/excluir) só para admin ou
+  funcionário autorizado. Excluir é soft delete — nada some do banco.
+- **Tela de Usuários** (`/usuarios`, só admin): lista todos os usuários e
+  permite conceder/revogar `pode_gerenciar_pecas` de um funcionário
+  diretamente pela interface (endpoint `PATCH /api/usuarios/<id>/permissao-pecas/`).
+- **Tela de Log de Atividades** (`/logs`, só admin): visualiza o que
+  `GET /api/logs/` retorna — quem fez o quê e quando, no catálogo e na
+  gestão de usuários.
+
+Para detalhes de implementação, ver [backend.md](backend.md) e
+[frontend.md](frontend.md). Para bugs e pontos de atenção conhecidos, ver
+[known-issues.md](known-issues.md).

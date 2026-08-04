@@ -39,6 +39,50 @@ function Sidebar() {
                             <span>Início</span>
                         </Link>
                     </li>
+                    <li>
+                        <Link
+                            to="/pecas"
+                            className={location.pathname === "/pecas" ? "active" : ""}
+                        >
+                            <span>Peças</span>
+                        </Link>
+                    </li>
+                    <li>
+                        <Link
+                            to="/categorias"
+                            className={location.pathname === "/categorias" ? "active" : ""}
+                        >
+                            <span>Categorias</span>
+                        </Link>
+                    </li>
+                    <li>
+                        <Link
+                            to="/fornecedores"
+                            className={location.pathname === "/fornecedores" ? "active" : ""}
+                        >
+                            <span>Fornecedores</span>
+                        </Link>
+                    </li>
+                    {usuario?.tipo === "adm" && (
+                        <>
+                            <li>
+                                <Link
+                                    to="/usuarios"
+                                    className={location.pathname === "/usuarios" ? "active" : ""}
+                                >
+                                    <span>Usuários</span>
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    to="/logs"
+                                    className={location.pathname === "/logs" ? "active" : ""}
+                                >
+                                    <span>Log de Atividades</span>
+                                </Link>
+                            </li>
+                        </>
+                    )}
                 </ul>
             </nav>
 

@@ -1,0 +1,193 @@
+/* ===== CATÁLOGO (Peças / Categorias / Fornecedores) ===== */
+/* Reaproveita as mesmas variáveis de tema de index.css e a estrutura de
+   layout do Dashboard (dashboard-layout / dashboard-content / header). */
+
+.catalogo-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.catalogo-toolbar h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--text-primary);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 20px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 9px 18px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-secondary:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary-glow);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-danger:hover {
+  background: var(--primary-glow);
+}
+
+/* Formulário (criar/editar) */
+.catalogo-form {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+
+.catalogo-form .input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.catalogo-form label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.catalogo-form input,
+.catalogo-form select,
+.catalogo-form textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.catalogo-form .form-actions {
+  display: flex;
+  gap: 10px;
+  grid-column: 1 / -1;
+}
+
+/* Tabela */
+.catalogo-table-wrapper {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+
+.catalogo-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.catalogo-table th,
+.catalogo-table td {
+  text-align: left;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.catalogo-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.catalogo-table tr:last-child td {
+  border-bottom: none;
+}
+
+.catalogo-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--bg-main);
+}
+
+.catalogo-empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.catalogo-acoes {
+  display: flex;
+  gap: 8px;
+}
+
+/* Badges de prioridade e estoque baixo na tabela de peças */
+.badge-prioridade-alta {
+  background: var(--primary-glow);
+  color: var(--primary);
+}
+
+.badge-prioridade-media {
+  background: rgba(202, 138, 4, 0.12);
+  color: #ca8a04;
+}
+
+.badge-prioridade-baixa {
+  background: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+}
+
+.badge-baixo-estoque {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: var(--primary-glow);
+  color: var(--primary);
+}

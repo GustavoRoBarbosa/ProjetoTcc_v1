@@ -47,3 +47,33 @@ a {
 ul {
   list-style: none;
 }
+
+/* Campo de senha com botão de mostrar/ocultar (usado em Login e
+   Cadastro) — o input relativo permite posicionar o botão do "olho"
+   dentro do próprio campo, sem sobrepor o texto digitado. */
+.senha-wrapper {
+  position: relative;
+}
+
+.senha-wrapper input {
+  width: 100%;
+  padding-right: 44px;
+}
+
+.senha-wrapper .btn-mostrar-senha {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+.senha-wrapper .btn-mostrar-senha:hover {
+  color: var(--text-secondary);
+}

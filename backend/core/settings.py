@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +21,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(9^z5$pshh#skl!1sevlar=8@h3of3r7#!-4d1zc_w3)az*0^!'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='', cast=Csv())
 
 
 # Application definition
@@ -40,6 +41,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'usuarios',
+    'catalogo',
+    'auditoria',
 ]
 
 MIDDLEWARE = [
@@ -79,11 +82,11 @@ WSGI_APPLICATION = 'core.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'tcc',
-        'USER': 'root',
-        'PASSWORD': 'root',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': config('DB_NAME', default='tcc'),
+        'USER': config('DB_USER', default='root'),
+        'PASSWORD': config('DB_PASSWORD', default=''),
+        'HOST': config('DB_HOST', default='localhost'),
+        'PORT': config('DB_PORT', default='3306'),
     }
 }
 
@@ -124,4 +127,57 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-CORS_ALLOW_ALL_ORIGINS = True
+# Fotos de peças do catálogo (Peca.imagem) ficam salvas aqui em dev.
+# Em produção isso normalmente vira um bucket de object storage, mas para
+# o escopo do TCC servir do disco local é suficiente.
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
+
+
+# E-mail (confirmação de cadastro — ver usuarios/views.py::cadastrar)
+#
+# Sem EMAIL_HOST_USER configurado no .env, cai automaticamente no
+# console backend: o e-mail inteiro (incluindo o link de confirmação) é
+# impresso no terminal onde o backend está rodando, em vez de ser
+# enviado de verdade. Dá pra testar o fluxo completo sem precisar de
+# credenciais de e-mail configuradas ainda.
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+
+if EMAIL_HOST_USER:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+    EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+    EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+    EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+    DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = 'nao-responda@grboficina.local'
+
+# URL do frontend, usada pra montar o link que vai no e-mail de
+# confirmação (ex: {FRONTEND_URL}/confirmar-email?token=...).
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
+
+# Client ID do OAuth do Google (ver usuarios/auth_google.py e
+# known-issues.md pra instruções de como gerar um). Sem isso configurado,
+# o endpoint de login com Google recusa a requisição com uma mensagem
+# clara em vez de um erro genérico.
+GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
+
+
+# Django REST Framework
+# Por padrão, toda view passa a exigir autenticação (IsAuthenticated).
+# Views que precisam ficar públicas (login, cadastro) marcam isso
+# explicitamente com @permission_classes([AllowAny]).
+# A authentication class customizada (usuarios/auth.py) é quem sabe ler
+# e validar o nosso token JWT feito com PyJWT.
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'usuarios.auth.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}

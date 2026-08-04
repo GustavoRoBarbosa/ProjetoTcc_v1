@@ -11,6 +11,7 @@ function Cadastro() {
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
     const [telefone, setTelefone] = useState("");
+    const [mostrarSenha, setMostrarSenha] = useState(false);
 
     async function cadastrarUsuario(e) {
 
@@ -62,7 +63,10 @@ function Cadastro() {
             });
 
             if (response.data.success) {
-                alert("Cadastro realizado com sucesso");
+                // A conta já existe, mas fica bloqueada pra login até o
+                // link do email ser clicado (ver backend/usuarios/views.py::cadastrar) —
+                // response.data.message já vem com essa instrução do backend.
+                alert(response.data.message);
                 navigate("/");
             } else {
                 alert(response.data.message);
@@ -115,14 +119,25 @@ function Cadastro() {
                     <div className="cadastro-form-row">
                         <div className="input-group">
                             <label htmlFor="senha">Senha</label>
-                            <input
-                                id="senha"
-                                type="password"
-                                placeholder="Crie uma senha"
-                                value={senha}
-                                onChange={(e) => setSenha(e.target.value)}
-                                required
-                            />
+                            <div className="senha-wrapper">
+                                <input
+                                    id="senha"
+                                    type={mostrarSenha ? "text" : "password"}
+                                    placeholder="Crie uma senha"
+                                    value={senha}
+                                    onChange={(e) => setSenha(e.target.value)}
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    className="btn-mostrar-senha"
+                                    onClick={() => setMostrarSenha(!mostrarSenha)}
+                                    aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                                    tabIndex={-1}
+                                >
+                                    {mostrarSenha ? "🙈" : "👁"}
+                                </button>
+                            </div>
                         </div>
 
                         <div className="input-group">

@@ -20,6 +20,7 @@ media/
 # Environment variables
 .env
 .env.*
+!.env.example
 
 # Static files
 staticfiles/
@@ -66,3 +67,11 @@ Thumbs.db
 # Optional
 *.swp
 *.swo
+
+# =========================
+# CLAUDE CODE
+# =========================
+
+# Configurações locais de permissão (específicas da máquina/sessão, não
+# do projeto). A documentação em .claude/docs/ continua versionada.
+.claude/settings.local.json
