@@ -533,3 +533,63 @@ consultável via API (ex: Postman/curl) ou diretamente no banco
   os próximos envios falham com `535 5.7.8 BadCredentials` mesmo com a
   senha "certa". Manter 2FA ligado é obrigatório, não só no momento de
   gerar a senha.
+
+## Vitrine pública (`catalogo` — endpoints sem login)
+
+Além do CRUD protegido (`/api/pecas/` etc., ver acima), `catalogo` expõe
+dois endpoints `AllowAny` para a página inicial pública funcionar sem
+autenticação:
+
+- `GET /api/loja/pecas/` — lista peças `ativo=True`, serializadas por
+  `PecaPublicaSerializer` (`catalogo/serializers.py`): só `id`, `codigo`,
+  `nome`, `descricao`, `preco`, `categoria_nome`, `imagem`, `disponivel`
+  (`SerializerMethodField`, `quantidade_estoque > 0`). Deliberadamente
+  omite campos internos (`quantidade_minima`, `nivel_prioridade`,
+  timestamps) que não são assunto do cliente final.
+- `GET /api/loja/pecas/<id>/` — detalhe de uma peça (404 se inativa).
+
+Ambas usam `context={'request': request}` no serializer para que
+`imagem` volte como URL absoluta (`http://127.0.0.1:8000/media/...`), não
+relativa — necessário porque o frontend roda em outra origem (porta 3000).
+
+## App `pedidos` — carrinho e pedidos
+
+App novo (`INSTALLED_APPS` em `core/settings.py`, incluído em
+`core/urls.py` via `path('api/', include('pedidos.urls'))`), responsável
+pelo carrinho de compras e pelo histórico de pedidos do cliente.
+
+### Models (`pedidos/models.py`)
+
+- `Carrinho` — `OneToOneField(Usuario)`: um carrinho por usuário, criado
+  sob demanda (`get_or_create`) na primeira vez que o cliente adiciona algo.
+- `ItemCarrinho` — `ForeignKey(Carrinho)` + `ForeignKey(Peca)` +
+  `quantidade`; `unique_together = ('carrinho', 'peca')` para que
+  adicionar a mesma peça duas vezes some quantidade em vez de duplicar linha.
+- `Pedido` — `usuario` (`SET_NULL`, para não perder o histórico se a
+  conta for excluída no futuro), `status` (`concluido`/`cancelado`),
+  `total`, `criado_em`.
+- `ItemPedido` — **snapshot**: guarda `peca_nome` e `preco_unitario` como
+  cópia no momento da compra (além da FK `peca`, `SET_NULL`), pra que
+  editar o preço/nome de uma peça depois não altere retroativamente o
+  que o cliente já comprou.
+
+### Views (`pedidos/views.py`)
+
+- `GET /api/carrinho/` — carrinho do usuário logado (`ver_carrinho`).
+- `POST /api/carrinho/itens/` (`{peca_id, quantidade}`) — adiciona/soma
+  item, validando contra `Peca.quantidade_estoque`.
+- `PATCH`/`DELETE /api/carrinho/itens/<id_item>/` — uma única view
+  `item_carrinho` tratando os dois métodos (`@api_view(['PATCH', 'DELETE'])`),
+  já que uma URL só pode apontar pra uma view no Django.
+- `POST /api/carrinho/finalizar/` — `finalizar_pedido`, dentro de
+  `transaction.atomic()`: valida estoque suficiente de todos os itens
+  primeiro, cria `Pedido` + `ItemPedido` (snapshot), decrementa
+  `Peca.quantidade_estoque`, esvazia o carrinho, e registra a compra em
+  `auditoria.LogAtividade`. Não faz `select_for_update()` — ver
+  known-issues.md sobre concorrência.
+- `GET /api/pedidos/` — `listar_pedidos`, histórico do usuário logado
+  (`prefetch_related('itens')`).
+
+Todos os serializers de carrinho (`CarrinhoSerializer`) precisam de
+`context={'request': request}` pelo mesmo motivo da vitrine pública
+(URL absoluta de imagem).

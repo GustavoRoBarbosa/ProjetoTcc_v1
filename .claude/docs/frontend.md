@@ -16,11 +16,14 @@ Scripts padrão CRA: `start`, `build`, `test`, `eject`.
 ```
 App.js
 components/Sidebar.jsx
+components/LojaHeader.jsx
 css/Cadastro.css
 css/Catalogo.css
 css/Dashboard.css
 css/Login.css
 css/Sidebar.css
+css/Loja.css
+css/Carrinho.css
 index.css
 index.js
 pages/Cadastro.jsx
@@ -34,6 +37,11 @@ pages/Logs.jsx
 pages/Pecas.jsx
 pages/RedefinirSenha.jsx
 pages/Usuarios.jsx
+pages/Loja.jsx
+pages/LojaProduto.jsx
+pages/ContaCliente.jsx
+pages/HistoricoCompras.jsx
+pages/Carrinho.jsx
 routes/PrivateRoute.jsx
 services/api.js
 services/sessaoSenha.js
@@ -331,3 +339,63 @@ mesmo `entrarComSucesso()`/mesmas três chaves de `localStorage`:
 (`EsqueciSenha.jsx` → `RedefinirSenha.jsx`), que também não loga sozinho
 — só troca a senha e manda o usuário pra tela de login normal, de novo
 com a senha nova.
+
+## Vitrine pública + área do cliente + carrinho
+
+A rota `/` deixou de ser o login e virou uma vitrine pública estilo
+Mercado Livre (sugestão do orientador), navegável sem conta. `/login`
+passou a ser a URL do login. Isso obrigou trocar todo `navigate("/")`/
+`<Link to="/">` que antes significava "ir pro login"
+(`Cadastro.jsx`, `ConfirmarEmail.jsx`, `EsqueciSenha.jsx`,
+`RedefinirSenha.jsx`) para `"/login"`.
+
+- **`pages/Loja.jsx`** — grid de cards (`GET /api/loja/pecas/`), clicar
+  num card navega para `/produto/:id`.
+- **`pages/LojaProduto.jsx`** — detalhe do produto (`GET
+  /api/loja/pecas/:id/`). Botão "Comprar": se não há `usuario` no
+  `localStorage`, manda pro login com `?next=/produto/:id` (ver
+  `Login.jsx` abaixo); se já está logado, `POST /api/carrinho/itens/`
+  direto e navega pra `/carrinho`.
+- **`components/LojaHeader.jsx`** — cabeçalho compartilhado por `Loja.jsx`
+  e `LojaProduto.jsx`. Existe porque as duas páginas tinham cabeçalho
+  próprio hardcoded pra sempre mostrar "Entrar/Criar conta", o que fazia
+  um usuário já logado, ao voltar pra vitrine, achar que tinha sido
+  deslogado (não tinha — só a UI não refletia a sessão). Agora lê
+  `localStorage` e mostra 🛒 Carrinho / "Olá, {nome}" / Sair quando
+  logado.
+- **`pages/ContaCliente.jsx`** (`/minha-conta`) — home do cliente logado:
+  atalhos pra Ofertas (`/`) e Histórico de Compras, mais o card de
+  informações pessoais (mesmo padrão de senha visível do Dashboard, via
+  `services/sessaoSenha.js`).
+- **`pages/Carrinho.jsx`** (`/carrinho`) — lista itens (`GET
+  /api/carrinho/`), +/- quantidade (`PATCH
+  /api/carrinho/itens/:id/`), remover (`DELETE
+  /api/carrinho/itens/:id/`), "Finalizar pedido" (`POST
+  /api/carrinho/finalizar/`) → sucesso navega pra
+  `/historico-compras`; falha (ex: estoque mudou) alerta e recarrega o
+  carrinho.
+- **`pages/HistoricoCompras.jsx`** — reescrita para mostrar pedidos reais
+  (`GET /api/pedidos/`) em vez do placeholder anterior.
+- **`Login.jsx`** — lê `?next=` da URL (`useSearchParams`); se presente,
+  `entrarComSucesso` navega pra lá em vez do destino padrão por tipo.
+  Isso fecha o fluxo "ver produto sem login → Comprar → login → volta
+  pro produto".
+
+### Separação cliente vs equipe
+
+`tipo === "cliente"` não deve enxergar as telas de gestão
+(Peças/Categorias/Fornecedores/Usuários/Logs/Dashboard admin) — eram só
+um "tapa-buraco" inicial, não a área real do cliente.
+
+- **`routes/PrivateRoute.jsx`** ganhou a prop `apenasEquipe` (default
+  `false`). Sem login → redireciona pra `/login`. Logado mas
+  `apenasEquipe` e `tipo === "cliente"` → redireciona pra `/minha-conta`
+  em vez de mostrar a tela.
+- **`App.js`** — `/dashboard`, `/pecas`, `/categorias`, `/fornecedores`,
+  `/usuarios`, `/logs` agora usam `<PrivateRoute apenasEquipe>`.
+  `/minha-conta`, `/historico-compras`, `/carrinho` usam `PrivateRoute`
+  normal (qualquer logado entra).
+- **`components/Sidebar.jsx`** — branch completo em `ehCliente =
+  usuario?.tipo === "cliente"`: cliente vê Minha Conta/Carrinho/Histórico
+  de Compras/Ofertas; equipe vê o menu de gestão de sempre + um link
+  "Ver Loja" pra `/`.

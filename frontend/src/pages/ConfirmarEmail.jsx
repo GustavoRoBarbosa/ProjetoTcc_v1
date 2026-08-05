@@ -54,7 +54,7 @@ function ConfirmarEmail() {
                 </div>
 
                 {status === "sucesso" && (
-                    <Link to="/" className="login-btn" style={{ display: "block", textAlign: "center", textDecoration: "none" }}>
+                    <Link to="/login" className="login-btn" style={{ display: "block", textAlign: "center", textDecoration: "none" }}>
                         Ir para o login
                     </Link>
                 )}

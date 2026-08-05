@@ -7,7 +7,7 @@ Projeto de TCC (trabalho de conclusão de curso) full-stack: um painel de gestã
 bugs e robustecer a base (banco/backend/autenticação) antes de partir para o
 catálogo de peças.
 
-Estado em 2026-07-30: oito rodadas de trabalho concluídas nesta sessão:
+Estado em 2026-08-04: nove rodadas de trabalho concluídas nesta sessão:
 
 1. Correção de bugs conhecidos (listar_usuarios, badge admin/adm).
 2. Banco/backend mais robusto (migrations reais, credenciais fora do código).
@@ -43,6 +43,20 @@ Estado em 2026-07-30: oito rodadas de trabalho concluídas nesta sessão:
    sempre ativa pra senhas de app do Gmail continuarem válidas — ambos
    documentados em backend.md/known-issues.md.
 
+9. Vitrine pública estilo Mercado Livre na rota `/` (sugestão do
+   orientador): visitante sem conta navega o catálogo (`Loja.jsx` +
+   `LojaProduto.jsx`, endpoints `AllowAny` `loja/pecas/`), e só precisa
+   logar ao tentar comprar. Área do cliente separada da área de gestão
+   (`Sidebar`/`PrivateRoute` agora brancham por `tipo === "cliente"` via
+   uma prop `apenasEquipe`) — cliente só vê Minha Conta, Carrinho e
+   Histórico de Compras, nunca as telas de Peças/Categorias/Fornecedores/
+   Usuários/Logs/Dashboard admin, que eram "tapa-buraco" inicial. Carrinho
+   de compras completo, persistido no banco por usuário (app novo
+   `pedidos`: `Carrinho`/`ItemCarrinho`/`Pedido`/`ItemPedido`), com
+   finalização de pedido transacional (decrementa estoque, snapshot de
+   preço/nome pro histórico não mudar retroativamente) — sem gateway de
+   pagamento real, fora do escopo do TCC.
+
 Durante os testes manuais (feitos pelo usuário no navegador), apareceram e
 foram corrigidos vários bugs reais — ver `known-issues.md`, seção "Resolvido".
 
@@ -52,7 +66,8 @@ foram corrigidos vários bugs reais — ver `known-issues.md`, seção "Resolvid
   mysqlclient), django-cors-headers, PyJWT (autenticação), google-auth
   (verificação do login Google), python-decouple (config via `.env`),
   Pillow (upload de imagem). Apps: `usuarios` (contas), `catalogo`
-  (peças/categorias/fornecedores) e `auditoria` (log de atividades).
+  (peças/categorias/fornecedores, + endpoints públicos da vitrine),
+  `auditoria` (log de atividades) e `pedidos` (carrinho e pedidos).
 - **Frontend**: Create React App, React 19.2.6, react-router-dom 7.15.1, axios 1.16.1.
   CSS puro (sem framework de UI).
 
@@ -102,8 +117,9 @@ autorização) usam 403.
 backend/
   core/            settings, urls, wsgi/asgi (projeto Django "core")
   usuarios/        contas/autenticação: model Usuario, views, urls, auth.py, permissions.py
-  catalogo/        peças: models (Categoria/Fornecedor/Peca), serializers, views (ViewSets), urls
+  catalogo/        peças: models (Categoria/Fornecedor/Peca), serializers (+ público), views (ViewSets + vitrine), urls
   auditoria/        log de atividades: model LogAtividade, serializers, views, urls
+  pedidos/         carrinho e pedidos: models (Carrinho/ItemCarrinho/Pedido/ItemPedido), serializers, views, urls
   manage.py
   requirements.txt
   .env             configs locais, inclui credenciais de email e Google Client ID (não versionado)
@@ -113,9 +129,11 @@ backend/
 frontend/
   .env             REACT_APP_GOOGLE_CLIENT_ID (não versionado)
   src/
-    pages/         Login.jsx, Cadastro.jsx, ConfirmarEmail.jsx, Dashboard.jsx, Pecas.jsx,
-                    Categorias.jsx, Fornecedores.jsx, Usuarios.jsx (admin), Logs.jsx (admin)
-    components/    Sidebar.jsx
+    pages/         Loja.jsx/LojaProduto.jsx (vitrine pública), Login.jsx, Cadastro.jsx,
+                    ConfirmarEmail.jsx, Dashboard.jsx, Pecas.jsx, Categorias.jsx, Fornecedores.jsx,
+                    Usuarios.jsx (admin), Logs.jsx (admin), ContaCliente.jsx, Carrinho.jsx,
+                    HistoricoCompras.jsx (área do cliente)
+    components/    Sidebar.jsx, LojaHeader.jsx
     routes/        PrivateRoute.jsx (guarda de rota autenticada)
     services/      api.js (instância axios + interceptors de JWT)
     css/           um CSS por página/componente + Catalogo.css compartilhado
@@ -146,6 +164,13 @@ frontend/
 - **Tela de Log de Atividades** (`/logs`, só admin): visualiza o que
   `GET /api/logs/` retorna — quem fez o quê e quando, no catálogo e na
   gestão de usuários.
+- **Vitrine pública** (`/`, sem login): grid de produtos estilo Mercado
+  Livre + página de detalhe (`/produto/:id`); "Comprar" exige login.
+- **Área do cliente** (`/minha-conta`, `/carrinho`, `/historico-compras`,
+  qualquer logado): informações pessoais, carrinho de compras persistido
+  no banco (adicionar/alterar quantidade/remover/finalizar pedido) e
+  histórico de pedidos já finalizados. Cliente (`tipo === "cliente"`) não
+  tem acesso às telas de gestão acima — só equipe (`adm`/`funcionario`).
 
 Para detalhes de implementação, ver [backend.md](backend.md) e
 [frontend.md](frontend.md). Para bugs e pontos de atenção conhecidos, ver

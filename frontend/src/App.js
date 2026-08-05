@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 
+import Loja from "./pages/Loja";
+import LojaProduto from "./pages/LojaProduto";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
 import ConfirmarEmail from "./pages/ConfirmarEmail";
@@ -11,6 +13,9 @@ import Categorias from "./pages/Categorias";
 import Fornecedores from "./pages/Fornecedores";
 import Usuarios from "./pages/Usuarios";
 import Logs from "./pages/Logs";
+import ContaCliente from "./pages/ContaCliente";
+import HistoricoCompras from "./pages/HistoricoCompras";
+import Carrinho from "./pages/Carrinho";
 import PrivateRoute from "./routes/PrivateRoute";
 
 function App() {
@@ -20,49 +25,76 @@ function App() {
 
       <Routes>
 
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<Loja />} />
+        <Route path="/produto/:id" element={<LojaProduto />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/confirmar-email" element={<ConfirmarEmail />} />
         <Route path="/esqueci-senha" element={<EsqueciSenha />} />
         <Route path="/redefinir-senha" element={<RedefinirSenha />} />
 
-        <Route path="/dashboard" element={
+        {/* Área do cliente — qualquer usuário logado entra, sem
+            restrição de tipo (é a área "padrão" de quem compra). */}
+        <Route path="/minha-conta" element={
           <PrivateRoute>
+          <ContaCliente />
+          </PrivateRoute>
+          }
+          />
+
+        <Route path="/historico-compras" element={
+          <PrivateRoute>
+          <HistoricoCompras />
+          </PrivateRoute>
+          }
+          />
+
+        <Route path="/carrinho" element={
+          <PrivateRoute>
+          <Carrinho />
+          </PrivateRoute>
+          }
+          />
+
+        {/* Telas de gestão — apenasEquipe manda cliente de volta pra
+            /minha-conta em vez de mostrar essas telas (ver PrivateRoute.jsx). */}
+        <Route path="/dashboard" element={
+          <PrivateRoute apenasEquipe>
           <Dashboard />
           </PrivateRoute>
           }
           />
 
         <Route path="/pecas" element={
-          <PrivateRoute>
+          <PrivateRoute apenasEquipe>
           <Pecas />
           </PrivateRoute>
           }
           />
 
         <Route path="/categorias" element={
-          <PrivateRoute>
+          <PrivateRoute apenasEquipe>
           <Categorias />
           </PrivateRoute>
           }
           />
 
         <Route path="/fornecedores" element={
-          <PrivateRoute>
+          <PrivateRoute apenasEquipe>
           <Fornecedores />
           </PrivateRoute>
           }
           />
 
         <Route path="/usuarios" element={
-          <PrivateRoute>
+          <PrivateRoute apenasEquipe>
           <Usuarios />
           </PrivateRoute>
           }
           />
 
         <Route path="/logs" element={
-          <PrivateRoute>
+          <PrivateRoute apenasEquipe>
           <Logs />
           </PrivateRoute>
           }

@@ -24,6 +24,7 @@ urlpatterns = [
     path('api/', include('usuarios.urls')),
     path('api/', include('catalogo.urls')),
     path('api/', include('auditoria.urls')),
+    path('api/', include('pedidos.urls')),
 ]
 
 # Em produção o servidor de mídia normalmente é outro (nginx, S3, etc.);

@@ -55,7 +55,7 @@ function EsqueciSenha() {
                         {enviando ? "Enviando..." : "Enviar link de redefinição"}
                     </button>
 
-                    <Link to="/">Voltar ao login</Link>
+                    <Link to="/login">Voltar ao login</Link>
                 </form>
 
                 <div className="login-footer">

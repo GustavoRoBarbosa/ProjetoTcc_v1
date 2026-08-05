@@ -95,6 +95,13 @@ deve saber antes de mexer no código.
   registros novos. A tela "Usuários" do admin não tem esse problema
   porque a API não aplica limite nenhum.
 
+- ~~Cabeçalho da vitrine pública dava a impressão de deslogar o usuário~~
+  — corrigido: `Loja.jsx`/`LojaProduto.jsx` tinham cabeçalho hardcoded
+  sempre mostrando "Entrar/Criar conta", mesmo com o usuário já logado
+  (a sessão nunca caía de verdade, só a UI não refletia). Extraído
+  `components/LojaHeader.jsx`, que lê `localStorage` e mostra o estado
+  certo.
+
 ## Em aberto
 
 - **Validação duplicada entre frontend e backend**
@@ -174,3 +181,26 @@ deve saber antes de mexer no código.
   via Google fazem a linha "Senha" no Dashboard cair no placeholder
   "faça login novamente para visualizar". É o comportamento esperado
   (trade-off de segurança escolhido deliberadamente), não um bug.
+
+- **Checkout sem gateway de pagamento real**
+  `POST /api/carrinho/finalizar/` cria o `Pedido` direto, sem nenhuma
+  integração de pagamento — é intencional pro escopo do TCC (o professor
+  pediu o fluxo de carrinho/compra, não pagamento de verdade), mas vale
+  deixar claro que não é um esquecimento.
+
+- **Checkout não usa `select_for_update()` — race condition teórica de
+  estoque**
+  `finalizar_pedido` (`pedidos/views.py`) confere `quantidade_estoque`
+  antes de entrar no `transaction.atomic()`, mas não bloqueia a linha da
+  `Peca` durante a transação. Dois checkouts concorrentes da última
+  unidade em estoque, no instante exato entre a checagem e o commit,
+  poderiam ambos passar. Risco baixo na escala de uso do projeto (TCC,
+  não produção com tráfego real), mas é o tipo de coisa que pode virar
+  pergunta na banca.
+
+- **Carrinho é só do usuário logado, sem carrinho de convidado**
+  Não há carrinho anônimo/`localStorage` que se funde ao carrinho do
+  banco no momento do login — adicionar ao carrinho sempre exige estar
+  logado (o botão "Comprar" da vitrine pública manda pro login antes
+  disso). Simplifica bastante o modelo, mas significa que navegar como
+  visitante e "guardar pra depois" sem logar não existe.

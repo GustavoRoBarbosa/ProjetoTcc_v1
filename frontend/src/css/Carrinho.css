@@ -1,0 +1,144 @@
+.carrinho-titulo {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+}
+
+.carrinho-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 24px;
+  align-items: start;
+}
+
+.carrinho-itens {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.carrinho-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 64px 1fr auto auto auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.carrinho-item-imagem {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg-main);
+  flex-shrink: 0;
+}
+
+.carrinho-item-imagem img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carrinho-item-info h3 {
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.carrinho-item-info p {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.carrinho-item-quantidade {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.carrinho-item-quantidade button {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--bg-main);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.carrinho-item-quantidade button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.carrinho-item-subtotal {
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.carrinho-item-remover {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.6;
+}
+
+.carrinho-item-remover:hover {
+  opacity: 1;
+}
+
+.carrinho-resumo {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  position: sticky;
+  top: 84px;
+}
+
+.carrinho-resumo h2 {
+  font-size: 16px;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.carrinho-resumo-linha {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  color: var(--text-secondary);
+}
+
+.carrinho-resumo-linha strong {
+  color: var(--text-primary);
+  font-size: 18px;
+}
+
+.carrinho-resumo-aviso {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .carrinho-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .carrinho-item {
+    grid-template-columns: 56px 1fr;
+    grid-template-areas:
+      "img info"
+      "qtd subtotal"
+      "remover remover";
+  }
+}

@@ -12,7 +12,7 @@ const api = axios.create({
 const ENDPOINTS_PUBLICOS = [
     "login/", "login-google/", "cadastro/", "token/refresh/",
     "confirmar-email/", "reenviar-confirmacao/",
-    "esqueci-senha/", "redefinir-senha/",
+    "esqueci-senha/", "redefinir-senha/", "loja/pecas/",
 ];
 
 // Antes de cada request, anexa o access token salvo no login (se existir)

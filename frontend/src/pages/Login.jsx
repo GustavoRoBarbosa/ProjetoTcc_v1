@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import api from "../services/api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { guardarSenhaDigitada } from "../services/sessaoSenha";
 import "../css/Login.css";
@@ -9,6 +9,11 @@ function Login() {
 
     const navigate = useNavigate();
     const googleBotaoRef = useRef(null);
+    // Ex: veio de "Comprar" num produto sem estar logado — depois de
+    // entrar, volta pra lá em vez de cair no destino padrão. Ver
+    // LojaProduto.jsx, que manda pra cá com ?next=/produto/<id>.
+    const [searchParams] = useSearchParams();
+    const proximaRota = searchParams.get("next");
 
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
@@ -22,7 +27,16 @@ function Login() {
         localStorage.setItem("usuario", JSON.stringify(dados.usuario));
         localStorage.setItem("accessToken", dados.tokens.access);
         localStorage.setItem("refreshToken", dados.tokens.refresh);
-        navigate("/dashboard");
+
+        if (proximaRota) {
+            navigate(proximaRota);
+            return;
+        }
+
+        // Cliente cai na própria área (Minha Conta); admin/funcionário
+        // continuam indo pro painel de gestão — ver PrivateRoute.jsx
+        // pro porquê cliente nem consegue acessar /dashboard direto.
+        navigate(dados.usuario.tipo === "cliente" ? "/minha-conta" : "/dashboard");
     }
 
     async function fazerLogin(e) {
@@ -170,6 +184,10 @@ function Login() {
 
                     <Link to="/cadastro">
                         Cadastre-se
+                    </Link>
+
+                    <Link to="/" style={{ fontSize: "13px" }}>
+                        ← Voltar à loja
                     </Link>
                 </form>
 

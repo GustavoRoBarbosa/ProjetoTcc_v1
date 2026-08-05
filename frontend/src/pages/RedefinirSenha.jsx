@@ -54,7 +54,7 @@ function RedefinirSenha() {
             alert(response.data.message);
 
             if (response.data.success) {
-                navigate("/");
+                navigate("/login");
             }
         } catch (error) {
             console.log(error);
@@ -117,7 +117,7 @@ function RedefinirSenha() {
                         {enviando ? "Salvando..." : "Redefinir senha"}
                     </button>
 
-                    <Link to="/">Voltar ao login</Link>
+                    <Link to="/login">Voltar ao login</Link>
                 </form>
 
                 <div className="login-footer">

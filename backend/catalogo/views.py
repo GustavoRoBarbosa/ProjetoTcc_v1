@@ -9,15 +9,20 @@ serializer + queryset, evitando repetir esse boilerplate 3 vezes
 """
 
 from auditoria.models import LogAtividade, registrar
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import viewsets
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
 
 from usuarios.permissions import PodeGerenciarPecas
 
 from .models import Categoria, Fornecedor, Peca
-from .serializers import CategoriaSerializer, FornecedorSerializer, PecaSerializer
+from .serializers import (
+    CategoriaSerializer, FornecedorSerializer, PecaPublicaSerializer, PecaSerializer,
+)
 
 
 class _CatalogoViewSet(viewsets.ModelViewSet):
@@ -91,3 +96,30 @@ class PecaViewSet(_CatalogoViewSet):
     # MultiPartParser é o que permite receber o upload de imagem junto
     # com os outros campos do formulário (multipart/form-data).
     parser_classes = [MultiPartParser, FormParser]
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])  # vitrine pública: qualquer visitante vê, sem precisar logar
+def listar_pecas_publicas(request):
+    """Alimenta a página inicial (Loja.jsx) — igual uma home de
+    marketplace, mostra o catálogo pra quem ainda nem tem conta. Usa
+    PecaPublicaSerializer (não o PecaSerializer "completo" usado pela
+    tela de gestão) pra não vazar campo interno nenhum pra um visitante
+    anônimo.
+    """
+    pecas = Peca.objects.select_related('categoria').filter(ativo=True)
+    dados = PecaPublicaSerializer(pecas, many=True, context={'request': request}).data
+    return Response(dados)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])  # página de detalhe também é pública (LojaProduto.jsx)
+def detalhe_peca_publica(request, id_peca):
+    """Um produto só, pra página de detalhe estilo Mercado Livre que abre
+    quando o visitante clica num card da vitrine. 404 tanto se o id não
+    existir quanto se a peça estiver inativa (soft-deletada) — pro
+    visitante os dois casos são "esse produto não existe".
+    """
+    peca = get_object_or_404(Peca.objects.select_related('categoria'), pk=id_peca, ativo=True)
+    dados = PecaPublicaSerializer(peca, context={'request': request}).data
+    return Response(dados)

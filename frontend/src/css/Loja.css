@@ -1,0 +1,345 @@
+/* ===== VITRINE PÚBLICA (página inicial "/") ===== */
+/* Grid de produtos no espírito de uma home de marketplace, mas com a
+   identidade visual do projeto (variáveis de index.css), não a
+   paleta amarela/azul do Mercado Livre. */
+
+.loja-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-main);
+}
+
+.loja-header {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: var(--shadow-sm);
+}
+
+.loja-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.loja-brand-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.loja-header-acoes {
+  display: flex;
+  gap: 12px;
+}
+
+.loja-btn-outline,
+.loja-btn-primary {
+  padding: 9px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.loja-btn-outline {
+  border: 2px solid var(--border-color);
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+.loja-btn-outline:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.loja-btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border: 2px solid var(--primary);
+}
+
+.loja-btn-primary:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.loja-main {
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.loja-hero {
+  text-align: center;
+  margin-bottom: 40px;
+  animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.loja-hero h1 {
+  font-family: var(--font-display);
+  font-size: 32px;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.loja-hero p {
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+.loja-grid-titulo h2 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.loja-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.loja-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-body);
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+}
+
+.loja-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: transparent;
+}
+
+.loja-card-imagem {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--bg-main);
+}
+
+.loja-card-imagem img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.loja-card-imagem-vazia {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.loja-card-esgotado {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--text-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 20px;
+}
+
+.loja-card-corpo {
+  padding: 14px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.loja-card-categoria {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.loja-card-nome {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  min-height: 2.8em;
+}
+
+.loja-card-preco {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 4px;
+}
+
+.loja-card-comprar {
+  margin-top: 8px;
+  align-self: flex-start;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.loja-vazio {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.loja-footer {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-card);
+}
+
+/* Página de detalhe do produto (LojaProduto.jsx) */
+.loja-voltar {
+  display: inline-block;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.loja-voltar:hover {
+  color: var(--primary);
+}
+
+.loja-produto {
+  display: grid;
+  grid-template-columns: minmax(0, 420px) 1fr;
+  gap: 40px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 32px;
+}
+
+.loja-produto-imagem {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg-main);
+}
+
+.loja-produto-imagem img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.loja-produto-info h1 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--text-primary);
+  margin: 6px 0 4px;
+}
+
+.loja-produto-codigo {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.loja-produto-preco {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.loja-produto-comprar {
+  width: 100%;
+  max-width: 280px;
+  padding: 12px 20px;
+  font-size: 15px;
+  margin-bottom: 28px;
+  cursor: pointer;
+  border-width: 2px;
+  border-style: solid;
+}
+
+.loja-produto-comprar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.loja-produto-descricao h2 {
+  font-size: 16px;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.loja-produto-descricao p {
+  color: var(--text-secondary);
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 720px) {
+  .loja-produto {
+    grid-template-columns: 1fr;
+    padding: 20px;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .loja-header {
+    padding: 14px 16px;
+  }
+
+  .loja-hero h1 {
+    font-size: 24px;
+  }
+
+  .loja-main {
+    padding: 24px 16px 48px;
+  }
+}

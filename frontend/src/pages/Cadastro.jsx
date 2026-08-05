@@ -67,7 +67,7 @@ function Cadastro() {
                 // link do email ser clicado (ver backend/usuarios/views.py::cadastrar) —
                 // response.data.message já vem com essa instrução do backend.
                 alert(response.data.message);
-                navigate("/");
+                navigate("/login");
             } else {
                 alert(response.data.message);
             }
@@ -168,7 +168,7 @@ function Cadastro() {
                     </button>
 
                     <p className="cadastro-login-link">
-                        Já tem uma conta? <Link to="/">Fazer login</Link>
+                        Já tem uma conta? <Link to="/login">Fazer login</Link>
                     </p>
 
                 </form>

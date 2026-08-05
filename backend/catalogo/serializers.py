@@ -85,3 +85,25 @@ class PecaSerializer(serializers.ModelSerializer):
             'imagem', 'ativo', 'criado_em', 'atualizado_em', 'excluido_em',
         ]
         read_only_fields = ['ativo', 'criado_em', 'atualizado_em', 'excluido_em']
+
+
+class PecaPublicaSerializer(serializers.ModelSerializer):
+    """Versão enxuta de PecaSerializer pra vitrine pública (sem login).
+
+    Só os campos que fazem sentido um visitante ver numa loja — nada de
+    quantidade_minima/nivel_prioridade (informação interna de reposição
+    de estoque, não é da conta do cliente) nem dos timestamps de
+    auditoria. `disponivel` substitui o número exato de estoque por um
+    booleano — não é da conta do cliente saber que "sobrou 1 unidade
+    exatamente", só se dá pra comprar ou não.
+    """
+
+    categoria_nome = serializers.CharField(source='categoria.nome', read_only=True, default=None)
+    disponivel = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Peca
+        fields = ['id', 'codigo', 'nome', 'descricao', 'preco', 'categoria_nome', 'imagem', 'disponivel']
+
+    def get_disponivel(self, peca):
+        return peca.quantidade_estoque > 0
