@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import api from "../services/api";
+import { useToast } from "../components/ToastContext";
+import { useConfirm } from "../components/ConfirmContext";
 import "../css/Dashboard.css";
 import "../css/Catalogo.css";
 
@@ -41,6 +43,8 @@ function formatarTelefone(valor) {
 function Fornecedores() {
 
     const usuario = JSON.parse(localStorage.getItem("usuario"));
+    const showToast = useToast();
+    const confirm = useConfirm();
     const [fornecedores, setFornecedores] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [mostrarForm, setMostrarForm] = useState(false);
@@ -54,7 +58,7 @@ function Fornecedores() {
             setFornecedores(response.data);
         } catch (error) {
             console.log(error);
-            alert("Erro ao carregar fornecedores");
+            showToast("Erro ao carregar fornecedores", "error");
         } finally {
             setCarregando(false);
         }
@@ -96,7 +100,7 @@ function Fornecedores() {
         const digitosTelefone = form.telefone.replace(/\D/g, "");
 
         if (!digitosTelefone && !form.email.trim()) {
-            alert("Informe ao menos um telefone ou e-mail para contato.");
+            showToast("Informe ao menos um telefone ou e-mail para contato.", "error");
             return;
         }
 
@@ -104,7 +108,7 @@ function Fornecedores() {
         // com um único dígito digitado — sem essa checagem isso passaria
         // como "telefone preenchido" mesmo não sendo um telefone de verdade.
         if (digitosTelefone && digitosTelefone.length < 10) {
-            alert("Telefone incompleto — informe ao menos 10 dígitos (com DDD).");
+            showToast("Telefone incompleto — informe ao menos 10 dígitos (com DDD).", "error");
             return;
         }
 
@@ -122,18 +126,18 @@ function Fornecedores() {
             carregar();
         } catch (error) {
             console.log(error);
-            alert("Erro ao salvar fornecedor");
+            showToast("Erro ao salvar fornecedor", "error");
         }
     }
 
     async function excluirFornecedor(id) {
-        if (!window.confirm("Excluir este fornecedor? Só é possível se não houver peças vinculadas a ele.")) return;
+        if (!await confirm("Excluir este fornecedor? Só é possível se não houver peças vinculadas a ele.")) return;
         try {
             await api.delete(`fornecedores/${id}/`);
             carregar();
         } catch (error) {
             console.log(error);
-            alert("Erro ao excluir fornecedor (pode haver peças vinculadas a ele)");
+            showToast("Erro ao excluir fornecedor (pode haver peças vinculadas a ele)", "error");
         }
     }
 

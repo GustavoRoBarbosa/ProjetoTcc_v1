@@ -17,30 +17,31 @@ function RedefinirSenha() {
     const [confirmarSenha, setConfirmarSenha] = useState("");
     const [mostrarSenha, setMostrarSenha] = useState(false);
     const [enviando, setEnviando] = useState(false);
+    const [erro, setErro] = useState("");
+    const [sucesso, setSucesso] = useState("");
 
     async function redefinir(e) {
         e.preventDefault();
 
+        setErro("");
+        setSucesso("");
+
         if (!token) {
-            alert("Link inválido: token não encontrado na URL.");
+            setErro("Link inválido: token não encontrado na URL.");
             return;
         }
 
         const regexSenha = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
         if (!regexSenha.test(novaSenha)) {
-            alert(
-                "A senha deve possuir:\n\n" +
-                "- 8 caracteres\n" +
-                "- letra maiúscula\n" +
-                "- letra minúscula\n" +
-                "- número\n" +
-                "- caractere especial"
+            setErro(
+                "A senha deve ter no mínimo 8 caracteres, incluindo letra " +
+                "maiúscula, letra minúscula, número e caractere especial."
             );
             return;
         }
 
         if (novaSenha !== confirmarSenha) {
-            alert("As senhas não coincidem.");
+            setErro("As senhas não coincidem.");
             return;
         }
 
@@ -51,15 +52,16 @@ function RedefinirSenha() {
                 nova_senha: novaSenha,
             });
 
-            alert(response.data.message);
-
             if (response.data.success) {
-                navigate("/login");
+                setSucesso(response.data.message);
+                setTimeout(() => navigate("/login"), 2000);
+            } else {
+                setErro(response.data.message);
+                setEnviando(false);
             }
         } catch (error) {
             console.log(error);
-            alert("Erro ao conectar com o servidor");
-        } finally {
+            setErro("Erro ao conectar com o servidor.");
             setEnviando(false);
         }
     }
@@ -74,6 +76,18 @@ function RedefinirSenha() {
                     <h1 className="login-title">GRB OFICE</h1>
                     <p className="login-subtitle">Escolha uma nova senha</p>
                 </div>
+
+                {erro && (
+                    <div className="login-alerta login-alerta-erro" role="alert">
+                        {erro}
+                    </div>
+                )}
+
+                {sucesso && (
+                    <div className="login-alerta login-alerta-aviso" role="status">
+                        {sucesso}
+                    </div>
+                )}
 
                 <form className="login-form" onSubmit={redefinir}>
                     <div className="input-group">
@@ -94,7 +108,17 @@ function RedefinirSenha() {
                                 aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
                                 tabIndex={-1}
                             >
-                                {mostrarSenha ? "🙈" : "👁"}
+                                {mostrarSenha ? (
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                        <path d="M1 1l22 22" />
+                                    </svg>
+                                ) : (
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
+                                        <circle cx="12" cy="12" r="3" />
+                                    </svg>
+                                )}
                             </button>
                         </div>
                     </div>
@@ -116,9 +140,11 @@ function RedefinirSenha() {
                     <button className="login-btn" type="submit" disabled={enviando}>
                         {enviando ? "Salvando..." : "Redefinir senha"}
                     </button>
-
-                    <Link to="/login">Voltar ao login</Link>
                 </form>
+
+                <p className="login-cadastro-link">
+                    <Link to="/login">← Voltar ao login</Link>
+                </p>
 
                 <div className="login-footer">
                     <p>© 2026 GRB Ofice — Todos os direitos reservados</p>

@@ -209,6 +209,15 @@ def cadastrar(request):
             'message': 'O nome é obrigatório'
         })
 
+    regex_nome = r'^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$'
+
+    if not re.match(regex_nome, nome.strip()):
+
+        return Response({
+            'success': False,
+            'message': 'O nome deve conter apenas letras'
+        })
+
     if not email or email.strip() == '':
 
         return Response({

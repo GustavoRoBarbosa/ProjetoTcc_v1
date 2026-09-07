@@ -82,6 +82,12 @@
   border-color: var(--primary-dark);
 }
 
+.loja-btn-carrinho {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .loja-main {
   flex: 1;
   max-width: 1200px;
@@ -291,7 +297,86 @@
   font-size: 32px;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 16px;
+  margin-bottom: 4px;
+}
+
+.loja-produto-disponibilidade {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.loja-produto-disponibilidade.disponivel {
+  color: #16a34a;
+}
+
+.loja-produto-disponibilidade.esgotado {
+  color: var(--primary);
+}
+
+.loja-produto-quantidade-linha {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.loja-produto-quantidade-linha label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.loja-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.loja-stepper button {
+  width: 38px;
+  height: 38px;
+  border: none;
+  background: var(--bg-main);
+  color: var(--text-primary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.loja-stepper button:hover:not(:disabled) {
+  background: var(--primary-glow);
+  color: var(--primary);
+}
+
+.loja-stepper button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.loja-stepper input {
+  width: 52px;
+  height: 38px;
+  border: none;
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  /* remove as setinhas nativas do input number pra não brigar com o
+     stepper +/- que já cumpre esse papel */
+  -moz-appearance: textfield;
+}
+
+.loja-stepper input::-webkit-outer-spin-button,
+.loja-stepper input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .loja-produto-comprar {

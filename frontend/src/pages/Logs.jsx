@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import api from "../services/api";
+import { useToast } from "../components/ToastContext";
 import "../css/Dashboard.css";
 import "../css/Catalogo.css";
 
@@ -21,6 +22,7 @@ function formatarData(iso) {
 function Logs() {
 
     const usuarioLogado = JSON.parse(localStorage.getItem("usuario"));
+    const showToast = useToast();
     const [logs, setLogs] = useState([]);
     const [carregando, setCarregando] = useState(true);
 
@@ -31,7 +33,7 @@ function Logs() {
                 setLogs(response.data);
             } catch (error) {
                 console.log(error);
-                alert("Erro ao carregar o log de atividades");
+                showToast("Erro ao carregar o log de atividades", "error");
             } finally {
                 setCarregando(false);
             }

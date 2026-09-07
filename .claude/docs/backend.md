@@ -505,10 +505,13 @@ consultável via API (ex: Postman/curl) ou diretamente no banco
 - MySQL rodando localmente, database `tcc`.
 - Copiar `backend/.env.example` para `backend/.env` e preencher com as
   credenciais reais (o `.env` não é versionado). `EMAIL_HOST_USER`/
-  `EMAIL_HOST_PASSWORD`/`GOOGLE_CLIENT_ID` podem ficar vazios pra
-  desenvolver sem email real nem login Google configurados (ver seções
-  acima) — nada quebra, só essas duas features específicas ficam
-  degradadas (email cai no console, login-google recusa com mensagem clara).
+  `EMAIL_HOST_PASSWORD`/`GOOGLE_CLIENT_ID`/`STRIPE_SECRET_KEY` podem
+  ficar vazios pra desenvolver sem email real, login Google ou checkout
+  configurados (ver seções acima) — nada quebra, só essas features
+  específicas ficam degradadas (email cai no console, login-google e
+  checkout recusam com mensagem clara). Chaves do Stripe: criar conta em
+  dashboard.stripe.com, pegar `STRIPE_SECRET_KEY`/`STRIPE_PUBLISHABLE_KEY`
+  em modo **teste** (nunca as de produção pra isso).
 - `pip install -r backend/requirements.txt`.
 - `python manage.py migrate` (aplica migrations pendentes; a tabela
   `usuarios` já existente não é recriada, só ganha colunas novas quando
@@ -567,11 +570,16 @@ pelo carrinho de compras e pelo histórico de pedidos do cliente.
   adicionar a mesma peça duas vezes some quantidade em vez de duplicar linha.
 - `Pedido` — `usuario` (`SET_NULL`, para não perder o histórico se a
   conta for excluída no futuro), `status` (`concluido`/`cancelado`),
-  `total`, `criado_em`.
+  `total`, `criado_em`, `stripe_session_id` (`unique=True, null=True`) —
+  guarda o id da sessão do Stripe Checkout que originou o pedido; é o que
+  garante idempotência se o cliente recarregar a página de sucesso (ver
+  Checkout abaixo).
 - `ItemPedido` — **snapshot**: guarda `peca_nome` e `preco_unitario` como
   cópia no momento da compra (além da FK `peca`, `SET_NULL`), pra que
   editar o preço/nome de uma peça depois não altere retroativamente o
   que o cliente já comprou.
+- `Encomenda` — pedido de encomenda de peça sem estoque (RF07/RF08, ver
+  seção "Encomendas" abaixo).
 
 ### Views (`pedidos/views.py`)
 
@@ -581,15 +589,115 @@ pelo carrinho de compras e pelo histórico de pedidos do cliente.
 - `PATCH`/`DELETE /api/carrinho/itens/<id_item>/` — uma única view
   `item_carrinho` tratando os dois métodos (`@api_view(['PATCH', 'DELETE'])`),
   já que uma URL só pode apontar pra uma view no Django.
-- `POST /api/carrinho/finalizar/` — `finalizar_pedido`, dentro de
-  `transaction.atomic()`: valida estoque suficiente de todos os itens
-  primeiro, cria `Pedido` + `ItemPedido` (snapshot), decrementa
-  `Peca.quantidade_estoque`, esvazia o carrinho, e registra a compra em
-  `auditoria.LogAtividade`. Não faz `select_for_update()` — ver
-  known-issues.md sobre concorrência.
 - `GET /api/pedidos/` — `listar_pedidos`, histórico do usuário logado
   (`prefetch_related('itens')`).
+
+A criação do `Pedido` + `ItemPedido` (decrementa estoque, esvazia
+carrinho, snapshot de preço/nome, log de auditoria) foi extraída pra
+`_criar_pedido_do_carrinho(usuario, stripe_session_id=None,
+status=Pedido.STATUS_CONCLUIDO)` — usada por `confirmar_pagamento`
+(compra, abaixo) e por `reservar_carrinho` (reserva, RF06, ver seção
+"Reserva" abaixo). Não faz `select_for_update()` — ver known-issues.md
+sobre concorrência.
 
 Todos os serializers de carrinho (`CarrinhoSerializer`) precisam de
 `context={'request': request}` pelo mesmo motivo da vitrine pública
 (URL absoluta de imagem).
+
+### Configurações do sistema (`ConfiguracaoSistema`)
+
+Model "singleton" (uma linha só, `ConfiguracaoSistema.obter()` faz
+`get_or_create(pk=1)`) pra ligar/desligar funcionalidades sem precisar
+mexer em código. Hoje só `reserva_habilitada` (default `True`), mas o
+modelo já está pronto pra outros toggles futuros.
+
+- `GET /api/configuracoes/` — qualquer usuário logado consulta (o
+  frontend usa isso pra decidir se mostra o botão "Reservar").
+- `PATCH /api/configuracoes/ {'reserva_habilitada': bool}` — só admin
+  (`EhAdministrador`), gera entrada em `auditoria.LogAtividade`.
+- `reservar_carrinho` confere `ConfiguracaoSistema.obter().reserva_habilitada`
+  antes de criar a reserva — a checagem é no backend, não só escondida no
+  frontend, então desligar de verdade bloqueia a API (não dá pra
+  contornar chamando `POST /api/carrinho/reservar/` direto).
+
+### Checkout — Stripe (pagamento simulado)
+
+`POST /api/carrinho/finalizar/` foi substituído por um checkout real via
+**Stripe Checkout** (página hospedada pelo próprio Stripe) — em modo
+teste, então nenhum valor de verdade circula, mas o fluxo é o mesmo de
+produção. Duas chaves no `.env` (`STRIPE_SECRET_KEY`/
+`STRIPE_PUBLISHABLE_KEY`, pegas em dashboard.stripe.com em modo teste);
+sem `STRIPE_SECRET_KEY`, os endpoints abaixo recusam com mensagem clara
+em vez de erro genérico (mesmo padrão do `GOOGLE_CLIENT_ID`).
+
+- `POST /api/carrinho/checkout/` (`criar_sessao_checkout`) — valida que o
+  carrinho não está vazio e que há estoque suficiente (só pra dar
+  feedback rápido antes de sair da aplicação), depois cria uma
+  `stripe.checkout.Session` (`mode='payment'`) com um line item por item
+  do carrinho (preço em centavos — `Decimal * 100` convertido pra `int`,
+  Stripe não trabalha com float pra dinheiro). `success_url` aponta pra
+  `{FRONTEND_URL}/pagamento-sucesso?session_id={CHECKOUT_SESSION_ID}`
+  (o Stripe substitui esse placeholder pelo id real antes de redirecionar
+  o navegador) e `cancel_url` volta pro carrinho. `metadata.usuario_id`
+  grava quem iniciou o checkout, conferido depois na confirmação.
+  Retorna `{'success': True, 'url': sessao.url}` — o frontend faz
+  `window.location.href = url` (não precisa de biblioteca Stripe no
+  frontend pra esse fluxo, só o redirect).
+- `POST /api/carrinho/confirmar-pagamento/` (`confirmar_pagamento`) —
+  chamado pela página de retorno (`PagamentoSucesso.jsx`) com o
+  `session_id` da URL. **Nunca confia no navegador ter chegado nessa
+  URL** — busca a sessão de verdade na API do Stripe
+  (`stripe.checkout.Session.retrieve`), confere que
+  `metadata.usuario_id` bate com `request.user` e que
+  `payment_status == 'paid'`, só então chama
+  `_criar_pedido_do_carrinho(usuario, stripe_session_id=session_id)`.
+  **Idempotente**: se o `Pedido` já existe pra aquele `session_id`
+  (cliente atualizou a página de sucesso), devolve ele direto em vez de
+  tentar descontar estoque de novo — garantido pelo `unique=True` do
+  campo.
+
+Não há webhook do Stripe configurado (`stripe listen`/endpoint
+`/webhooks/stripe/`) — a confirmação depende do navegador do cliente
+chegar na `success_url` depois do pagamento. Aceitável pro escopo do TCC
+(ver known-issues.md), mas significa que um pagamento aprovado sem o
+cliente voltar pro site (fechou a aba antes do redirect) não gera
+`Pedido` — o dinheiro (simulado) fica "só no Stripe".
+
+### Reserva (RF06)
+
+`Pedido.status` ganhou o valor `reservado`, além de `concluido`/
+`cancelado`. Decisão de escopo confirmada com o usuário: **sem prazo de
+expiração automática** — a reserva fica ativa até alguém agir sobre ela
+(cliente não tem como cancelar a própria reserva hoje, só a equipe).
+
+- `POST /api/carrinho/reservar/` (`reservar_carrinho`) — mesmas
+  validações de estoque de um checkout normal, mas chama
+  `_criar_pedido_do_carrinho(usuario, status=Pedido.STATUS_RESERVADO)`
+  direto, sem passar pelo Stripe (não há cobrança nesse momento — o
+  pagamento acontece depois, presencialmente, na retirada).
+- `GET /api/reservas/` (`listar_reservas`, `PodeGerenciarPecas`) —
+  reservas ativas de **todos** os clientes (diferente de
+  `listar_pedidos`, que é sempre filtrado pelo usuário logado).
+- `PATCH /api/reservas/<id>/cancelar/` (`cancelar_reserva`,
+  `PodeGerenciarPecas`) — devolve a quantidade de cada `ItemPedido` ao
+  estoque da respectiva `Peca` e marca o `Pedido` como `cancelado`. É a
+  única forma de liberar uma reserva, já que não há expiração automática.
+
+`PedidoSerializer` ganhou `usuario_nome` (só usado por `listar_reservas`
+— o histórico do próprio cliente já sabe de quem é o pedido).
+
+### Encomendas (RF07/RF08)
+
+- `POST /api/encomendas/` (`criar_encomenda`) — cliente pede uma peça com
+  `quantidade_estoque == 0` (recusa se houver estoque — nesse caso o
+  fluxo é comprar direto). Nasce sempre `pendente`.
+- `GET /api/encomendas/minhas/` (`minhas_encomendas`) — status das
+  próprias encomendas do cliente logado.
+- `GET /api/encomendas/pendentes/` (`listar_encomendas`, `PodeGerenciarPecas`)
+  — fila de validação da equipe.
+- `PATCH /api/encomendas/<id>/validar/` (`validar_encomenda`,
+  `PodeGerenciarPecas`) — aprova ou recusa. **Aprovar soma a quantidade
+  encomendada ao estoque da peça** (representa "a peça foi providenciada"),
+  pra que o cliente consiga comprá-la de verdade em seguida pelo
+  carrinho/checkout normal. Ambas as ações (criar/validar) geram entrada
+  em `auditoria.LogAtividade`.

@@ -191,6 +191,57 @@
   box-shadow: 0 0 0 4px var(--primary-glow);
 }
 
+/* Alertas de erro/sucesso do formulário */
+.cadastro-alerta {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  line-height: 1.5;
+  text-align: left;
+  font-weight: 500;
+  animation: cadastroAlertaEntrance 0.25s ease both;
+}
+
+.cadastro-alerta::before {
+  flex-shrink: 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.cadastro-alerta-erro {
+  background: #fdecea;
+  border: 1px solid #f3b4ad;
+  color: #a02622;
+}
+
+.cadastro-alerta-erro::before {
+  content: '⚠';
+}
+
+.cadastro-alerta-sucesso {
+  background: #e9f7ee;
+  border: 1px solid #a9dcbb;
+  color: #1e7a41;
+}
+
+.cadastro-alerta-sucesso::before {
+  content: '✓';
+}
+
+@keyframes cadastroAlertaEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Row de dois campos lado a lado */
 .cadastro-form-row {
   display: grid;
@@ -237,6 +288,13 @@
 
 .cadastro-btn:active {
   transform: translateY(0);
+}
+
+.cadastro-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Link para Login */

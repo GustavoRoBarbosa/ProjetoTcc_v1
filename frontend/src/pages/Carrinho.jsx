@@ -2,21 +2,36 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import LojaHeader from "../components/LojaHeader";
 import api from "../services/api";
+import { useToast } from "../components/ToastContext";
+import { useConfirm } from "../components/ConfirmContext";
 import "../css/Loja.css";
 import "../css/Carrinho.css";
+import "../css/Dashboard.css";
 
 function Carrinho() {
 
     const navigate = useNavigate();
+    const showToast = useToast();
+    const confirm = useConfirm();
     const [carrinho, setCarrinho] = useState(null);
     const [carregando, setCarregando] = useState(true);
     const [finalizando, setFinalizando] = useState(false);
+    const [reservando, setReservando] = useState(false);
+    // Admin pode ligar/desligar a reserva a qualquer momento (ver
+    // Configuracoes.jsx e backend/pedidos/views.py::configuracoes) —
+    // default true enquanto a chamada não volta, pra não "piscar"
+    // escondendo o botão à toa numa conexão lenta.
+    const [reservaHabilitada, setReservaHabilitada] = useState(true);
 
     async function carregar() {
         setCarregando(true);
         try {
-            const response = await api.get("carrinho/");
-            setCarrinho(response.data);
+            const [respostaCarrinho, respostaConfig] = await Promise.all([
+                api.get("carrinho/"),
+                api.get("configuracoes/"),
+            ]);
+            setCarrinho(respostaCarrinho.data);
+            setReservaHabilitada(respostaConfig.data.reserva_habilitada);
         } catch (error) {
             console.log(error);
         } finally {
@@ -34,11 +49,11 @@ function Carrinho() {
             if (response.data.success) {
                 setCarrinho(response.data.carrinho);
             } else {
-                alert(response.data.message);
+                showToast(response.data.message, "error");
             }
         } catch (error) {
             console.log(error);
-            alert("Erro ao atualizar o carrinho");
+            showToast("Erro ao atualizar o carrinho", "error");
         }
     }
 
@@ -48,26 +63,55 @@ function Carrinho() {
             setCarrinho(response.data.carrinho);
         } catch (error) {
             console.log(error);
-            alert("Erro ao remover item");
+            showToast("Erro ao remover item", "error");
         }
     }
 
-    async function finalizarPedido() {
+    // "Finalizar pedido" agora abre o checkout do Stripe (modo teste — ver
+    // backend/pedidos/views.py::criar_sessao_checkout). O Pedido só é
+    // criado de verdade depois que o Stripe confirma o pagamento, na
+    // página de retorno (PagamentoSucesso.jsx) — aqui só pedimos a sessão
+    // e redirecionamos o navegador inteiro pra lá (é assim que o Stripe
+    // Checkout hospedado funciona, sem precisar de biblioteca no frontend).
+    async function irParaPagamento() {
         setFinalizando(true);
         try {
-            const response = await api.post("carrinho/finalizar/");
+            const response = await api.post("carrinho/checkout/");
             if (response.data.success) {
-                alert(`Pedido #${response.data.pedido.id} finalizado com sucesso!`);
-                navigate("/historico-compras");
+                window.location.href = response.data.url;
             } else {
-                alert(response.data.message);
+                showToast(response.data.message, "error");
                 carregar(); // estoque pode ter mudado — recarrega o carrinho atualizado
+                setFinalizando(false);
             }
         } catch (error) {
             console.log(error);
-            alert("Erro ao finalizar pedido");
-        } finally {
+            showToast("Erro ao iniciar o pagamento", "error");
             setFinalizando(false);
+        }
+    }
+
+    // Reserva separa a peça em estoque sem pagar agora (RF06) — sem
+    // prazo de expiração; só a equipe pode cancelar manualmente pra
+    // liberar o estoque de novo (ver backend/pedidos/views.py::cancelar_reserva).
+    async function reservar() {
+        if (!await confirm("Reservar os itens do carrinho? Sem prazo de validade — pague e retire na loja.")) return;
+
+        setReservando(true);
+        try {
+            const response = await api.post("carrinho/reservar/");
+            if (response.data.success) {
+                showToast(`Reserva #${response.data.pedido.id} feita com sucesso!`, "success");
+                navigate("/historico-compras");
+            } else {
+                showToast(response.data.message, "error");
+                carregar();
+            }
+        } catch (error) {
+            console.log(error);
+            showToast("Erro ao reservar os itens", "error");
+        } finally {
+            setReservando(false);
         }
     }
 
@@ -134,14 +178,24 @@ function Carrinho() {
                             <button
                                 className="loja-btn-primary"
                                 style={{ width: "100%", padding: "12px", marginTop: "16px" }}
-                                onClick={finalizarPedido}
-                                disabled={finalizando}
+                                onClick={irParaPagamento}
+                                disabled={finalizando || reservando}
                             >
-                                {finalizando ? "Finalizando..." : "Finalizar pedido"}
+                                {finalizando ? "Redirecionando..." : "Ir para pagamento"}
                             </button>
+                            {reservaHabilitada && (
+                                <button
+                                    className="btn-info"
+                                    style={{ width: "100%", padding: "12px", marginTop: "10px" }}
+                                    onClick={reservar}
+                                    disabled={finalizando || reservando}
+                                >
+                                    {reservando ? "Reservando..." : "Reservar (pagar depois)"}
+                                </button>
+                            )}
                             <p className="carrinho-resumo-aviso">
-                                Sem pagamento integrado ainda — finalizar registra o pedido
-                                normalmente e reserva o estoque.
+                                Pagamento simulado via Stripe (modo teste) — nenhum valor real é cobrado.
+                                {reservaHabilitada && " Reservar separa o item sem pagar agora, sem prazo de validade."}
                             </p>
                         </div>
                     </div>

@@ -182,21 +182,71 @@ deve saber antes de mexer no código.
   "faça login novamente para visualizar". É o comportamento esperado
   (trade-off de segurança escolhido deliberadamente), não um bug.
 
-- **Checkout sem gateway de pagamento real**
-  `POST /api/carrinho/finalizar/` cria o `Pedido` direto, sem nenhuma
-  integração de pagamento — é intencional pro escopo do TCC (o professor
-  pediu o fluxo de carrinho/compra, não pagamento de verdade), mas vale
-  deixar claro que não é um esquecimento.
+- **Checkout via Stripe, mas em modo teste (pagamento simulado)**
+  O carrinho finaliza através do Stripe Checkout de verdade (sessão
+  criada em `POST /api/carrinho/checkout/`, confirmada em
+  `POST /api/carrinho/confirmar-pagamento/` — ver backend.md), mas usando
+  as chaves de **teste** do Stripe. Nenhum valor real circula; é
+  intencional pro escopo do TCC (o pagamento de verdade exigiria conta
+  business verificada, não faz sentido pro projeto), mas vale deixar
+  claro que não é um esquecimento nem um "fake" só no frontend — o fluxo
+  de checkout, sessão e confirmação é real, só o dinheiro é que é de
+  brinquedo.
+
+- **Sem webhook do Stripe — confirmação depende do navegador voltar**
+  Não existe um endpoint `/webhooks/stripe/` escutando eventos do Stripe.
+  A confirmação do pagamento (`confirmar_pagamento`) só acontece quando o
+  navegador do cliente chega na `success_url` depois de pagar. Se o
+  cliente fechar a aba/perder conexão exatamente entre pagar no Stripe e
+  ser redirecionado de volta, o pagamento (simulado) fica "só no
+  Stripe" e nenhum `Pedido` é criado — o estoque não é descontado.
+  Resolver isso de verdade exigiria um webhook (fora do escopo comum de
+  TCC); aceitável dado que é modo teste e o volume de uso é baixo.
+
+- **Encomenda "excedente" flexibiliza a regra original de RF07**
+  A definição original (ver roadmap-final.md) era "encomenda só faz
+  sentido quando `quantidade_estoque == 0`". Agora `adicionar_item`
+  (`pedidos/views.py`) também cria uma encomenda automática quando o
+  cliente pede mais unidades do que há em estoque (ex: pede 5, só há 2 —
+  compra as 2 e encomenda as 3 restantes), mesmo a peça tendo estoque
+  parcial (`> 0`). `criar_encomenda` (usado pelo botão "Encomendar" da
+  vitrine, só visível quando `disponivel == false`) continua exigindo
+  `quantidade_estoque == 0` — a flexibilização é só no fluxo automático
+  do carrinho.
+
+- **Reserva sem prazo de expiração — decisão de escopo confirmada**
+  RF06 pedia decidir isso antes de modelar. Optou-se por **sem prazo**: a
+  peça fica reservada até a equipe cancelar manualmente
+  (`PATCH /api/reservas/<id>/cancelar/`, tela `/reservas`) — não há job
+  periódico nem checagem de expiração na consulta. Mais simples pro
+  escopo do TCC; risco é uma reserva nunca retirada "prender" estoque
+  indefinidamente até alguém perceber e cancelar na tela.
+
+- **Cliente não cancela a própria reserva**
+  Só a equipe (`PodeGerenciarPecas`) tem acesso a
+  `PATCH /api/reservas/<id>/cancelar/`. Se o cliente desistir de uma
+  reserva, hoje precisa pedir pra equipe cancelar — não existe um botão
+  "desistir da reserva" na área do cliente (`HistoricoCompras.jsx` só
+  mostra o status, sem ação).
 
 - **Checkout não usa `select_for_update()` — race condition teórica de
   estoque**
-  `finalizar_pedido` (`pedidos/views.py`) confere `quantidade_estoque`
-  antes de entrar no `transaction.atomic()`, mas não bloqueia a linha da
-  `Peca` durante a transação. Dois checkouts concorrentes da última
-  unidade em estoque, no instante exato entre a checagem e o commit,
-  poderiam ambos passar. Risco baixo na escala de uso do projeto (TCC,
-  não produção com tráfego real), mas é o tipo de coisa que pode virar
-  pergunta na banca.
+  `_criar_pedido_do_carrinho` (`pedidos/views.py`) confere
+  `quantidade_estoque` antes de entrar no `transaction.atomic()`, mas não
+  bloqueia a linha da `Peca` durante a transação. Dois checkouts
+  concorrentes da última unidade em estoque, no instante exato entre a
+  checagem e o commit, poderiam ambos passar. Risco baixo na escala de
+  uso do projeto (TCC, não produção com tráfego real), mas é o tipo de
+  coisa que pode virar pergunta na banca.
+
+- **Aprovar encomenda soma estoque antes do cliente realmente comprar**
+  `validar_encomenda` já incrementa `Peca.quantidade_estoque` no momento
+  da aprovação (RF08), não no momento da compra — decisão consciente pra
+  simplificar o fluxo (sem isso o cliente não teria como comprar a peça
+  depois de aprovada). Efeito colateral: se o cliente nunca voltar pra
+  comprar, o estoque fica "inflado" artificialmente até alguém perceber.
+  Sem prazo de expiração de encomenda aprovada (mesma categoria de
+  decisão da "Reserva" no roadmap — ver `.claude/docs/roadmap-final.md`).
 
 - **Carrinho é só do usuário logado, sem carrinho de convidado**
   Não há carrinho anônimo/`localStorage` que se funde ao carrinho do

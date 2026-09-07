@@ -1,6 +1,12 @@
 from rest_framework import serializers
 
-from .models import Carrinho, ItemCarrinho, ItemPedido, Pedido
+from .models import Carrinho, ConfiguracaoSistema, Encomenda, ItemCarrinho, ItemPedido, Pedido
+
+
+class ConfiguracaoSistemaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConfiguracaoSistema
+        fields = ['reserva_habilitada']
 
 
 class ItemCarrinhoSerializer(serializers.ModelSerializer):
@@ -37,7 +43,24 @@ class ItemPedidoSerializer(serializers.ModelSerializer):
 
 class PedidoSerializer(serializers.ModelSerializer):
     itens = ItemPedidoSerializer(many=True, read_only=True)
+    # Só usado pela tela de reservas da equipe (listar_reservas) — o
+    # histórico do próprio cliente (listar_pedidos) já sabe de quem é.
+    usuario_nome = serializers.CharField(source='usuario.nomUsu', read_only=True, default=None)
 
     class Meta:
         model = Pedido
-        fields = ['id', 'status', 'total', 'criado_em', 'itens']
+        fields = ['id', 'status', 'total', 'criado_em', 'itens', 'usuario_nome']
+
+
+class EncomendaSerializer(serializers.ModelSerializer):
+    peca_nome = serializers.CharField(source='peca.nome', read_only=True)
+    cliente_nome = serializers.CharField(source='cliente.nomUsu', read_only=True)
+    respondido_por_nome = serializers.CharField(source='respondido_por.nomUsu', read_only=True, default=None)
+
+    class Meta:
+        model = Encomenda
+        fields = [
+            'id', 'peca', 'peca_nome', 'cliente_nome', 'quantidade', 'status',
+            'criado_em', 'respondido_em', 'respondido_por_nome',
+        ]
+        read_only_fields = ['status', 'criado_em', 'respondido_em']

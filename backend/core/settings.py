@@ -167,6 +167,13 @@ FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
 # clara em vez de um erro genérico.
 GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
 
+# Chaves de teste do Stripe (dashboard.stripe.com, modo teste) usadas pra
+# simular o pagamento do checkout (ver pedidos/views.py::criar_sessao_checkout).
+# Sem STRIPE_SECRET_KEY configurada, o endpoint de checkout recusa com uma
+# mensagem clara em vez de um erro genérico — mesmo padrão do Google acima.
+STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
+STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')
+
 
 # Django REST Framework
 # Por padrão, toda view passa a exigir autenticação (IsAuthenticated).

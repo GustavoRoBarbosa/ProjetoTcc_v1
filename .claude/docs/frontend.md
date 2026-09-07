@@ -97,6 +97,13 @@ do backend (ver [backend.md](backend.md#autenticação--jwt-customizado-backendu
 | `/fornecedores` | `<Fornecedores />` (dentro de `<PrivateRoute>`) | Sim |
 | `/usuarios` | `<Usuarios />` (dentro de `<PrivateRoute>`, tela recusa se não-admin) | Sim |
 | `/logs` | `<Logs />` (dentro de `<PrivateRoute>`, tela recusa se não-admin) | Sim |
+| `/encomendas` | `<Encomendas />` (`<PrivateRoute apenasEquipe>`, tela recusa se sem `PodeGerenciarPecas`) | Sim |
+| `/reservas` | `<Reservas />` (`<PrivateRoute apenasEquipe>`, tela recusa se sem `PodeGerenciarPecas`) | Sim |
+| `/configuracoes` | `<Configuracoes />` (`<PrivateRoute apenasEquipe>`, tela recusa se não-admin) | Sim |
+| `/pagamento-sucesso` | `<PagamentoSucesso />` (`<PrivateRoute>`, lê `?session_id=` — retorno do Stripe Checkout) | Sim |
+
+(Tabela não cobre as rotas da vitrine/área do cliente — ver seção "Vitrine
+pública + área do cliente + carrinho" mais abaixo.)
 
 ### `routes/PrivateRoute.jsx`
 
@@ -370,12 +377,60 @@ passou a ser a URL do login. Isso obrigou trocar todo `navigate("/")`/
 - **`pages/Carrinho.jsx`** (`/carrinho`) — lista itens (`GET
   /api/carrinho/`), +/- quantidade (`PATCH
   /api/carrinho/itens/:id/`), remover (`DELETE
-  /api/carrinho/itens/:id/`), "Finalizar pedido" (`POST
-  /api/carrinho/finalizar/`) → sucesso navega pra
-  `/historico-compras`; falha (ex: estoque mudou) alerta e recarrega o
+  /api/carrinho/itens/:id/`). "Ir para pagamento" chama `POST
+  /api/carrinho/checkout/` e redireciona o navegador inteiro
+  (`window.location.href`) pra URL do Stripe Checkout que a API devolve
+  — o Pedido só é criado depois, na página de retorno (ver
+  `PagamentoSucesso.jsx`). "Reservar (pagar depois)" (RF06) chama `POST
+  /api/carrinho/reservar/` direto — sem Stripe, sem prazo de validade —
+  e navega pro histórico com um `window.confirm()` antes (ação sem volta
+  fácil pro cliente, já que só a equipe cancela reserva). Falha em
+  qualquer um dos dois (ex: estoque mudou) mostra toast e recarrega o
   carrinho.
-- **`pages/HistoricoCompras.jsx`** — reescrita para mostrar pedidos reais
-  (`GET /api/pedidos/`) em vez do placeholder anterior.
+- **`pages/PagamentoSucesso.jsx`** (`/pagamento-sucesso`) — pra onde o
+  Stripe redireciona depois do pagamento (simulado, modo teste). Lê
+  `?session_id=` da URL (`useSearchParams`) e chama `POST
+  /api/carrinho/confirmar-pagamento/` — o backend confere com a API do
+  Stripe se o pagamento foi mesmo aprovado antes de criar o `Pedido` de
+  verdade (nunca confia só em ter chegado nessa URL). Mostra sucesso
+  (com link pro histórico) ou erro (com link de volta pro carrinho).
+- **`pages/HistoricoCompras.jsx`** — mostra pedidos reais (`GET
+  /api/pedidos/`), cada um com badge de status (Pago/Reservado/Cancelado
+  — `badge-success`/`badge-user`/`badge-danger`), e numa seção separada
+  as encomendas do cliente (`GET /api/encomendas/minhas/`, RF07) com
+  badge próprio (pendente/aprovada/recusada/concluída). Encomenda
+  aprovada ganha um botão azul "Comprar agora" que adiciona a peça ao
+  carrinho (`POST /api/carrinho/itens/`) e navega pra `/carrinho` — dali
+  em diante segue o checkout normal via Stripe.
+- **`pages/Configuracoes.jsx`** (`/configuracoes`, só admin) — toggle
+  visual (`.toggle-switch`) pra ligar/desligar a Reserva (RF06) via
+  `GET`/`PATCH /api/configuracoes/`. `Carrinho.jsx` consulta esse mesmo
+  endpoint ao carregar e só mostra o botão "Reservar" se
+  `reserva_habilitada` vier `true` — o backend também bloqueia
+  `POST /api/carrinho/reservar/` quando desligado, então não é só uma
+  máscara visual.
+- **`pages/Reservas.jsx`** (`/reservas`, equipe com `PodeGerenciarPecas`)
+  — lista reservas ativas de todos os clientes (`GET /api/reservas/`,
+  mostra nome do cliente/itens/total/data), botão "Cancelar" (`PATCH
+  /api/reservas/<id>/cancelar/`) devolve o estoque. Sem prazo de
+  expiração automática — é a única forma de liberar uma reserva parada.
+- **`pages/Encomendas.jsx`** (`/encomendas`, equipe com
+  `PodeGerenciarPecas`) — fila de encomendas pendentes (`GET
+  /api/encomendas/pendentes/`), botões Aprovar (`btn-success`, verde) e
+  Recusar (`btn-danger`) chamando `PATCH
+  /api/encomendas/<id>/validar/ {status}`.
+- **`components/ToastContext.jsx`** (`useToast()`) — notificação no
+  canto da tela (`Toast.css`), substituindo os `alert()` nativos em
+  todas as páginas do sistema (mais consistente com o resto do design).
+  Provider montado uma vez em `App.js`, dentro do `BrowserRouter`.
+- **`components/ConfirmContext.jsx`** (`useConfirm()`) — modal de
+  confirmação estilizado (`Confirm.css`, overlay + dialog com a
+  identidade visual do site), substituindo todo `window.confirm()`
+  nativo (Peças/Categorias/Fornecedores/Usuários/Encomendas/Reservas/
+  Carrinho). `confirm(mensagem)` devolve uma `Promise<boolean>` — mesma
+  forma de uso do `window.confirm`, só que assíncrona (`if (!await
+  confirm("...")) return;`). Provider montado em `App.js`, dentro do
+  `ToastProvider`.
 - **`Login.jsx`** — lê `?next=` da URL (`useSearchParams`); se presente,
   `entrarComSucesso` navega pra lá em vez do destino padrão por tipo.
   Isso fecha o fluxo "ver produto sem login → Comprar → login → volta

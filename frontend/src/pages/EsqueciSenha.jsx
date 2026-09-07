@@ -11,17 +11,21 @@ function EsqueciSenha() {
 
     const [email, setEmail] = useState("");
     const [enviando, setEnviando] = useState(false);
+    const [aviso, setAviso] = useState("");
+    const [erro, setErro] = useState("");
 
     async function enviarPedido(e) {
         e.preventDefault();
 
+        setErro("");
+        setAviso("");
         setEnviando(true);
         try {
             const response = await api.post("esqueci-senha/", { email });
-            alert(response.data.message);
+            setAviso(response.data.message);
         } catch (error) {
             console.log(error);
-            alert("Erro ao conectar com o servidor");
+            setErro("Erro ao conectar com o servidor.");
         } finally {
             setEnviando(false);
         }
@@ -37,6 +41,18 @@ function EsqueciSenha() {
                     <h1 className="login-title">GRB OFICE</h1>
                     <p className="login-subtitle">Esqueci minha senha</p>
                 </div>
+
+                {erro && (
+                    <div className="login-alerta login-alerta-erro" role="alert">
+                        {erro}
+                    </div>
+                )}
+
+                {aviso && (
+                    <div className="login-alerta login-alerta-aviso" role="status">
+                        {aviso}
+                    </div>
+                )}
 
                 <form className="login-form" onSubmit={enviarPedido}>
                     <div className="input-group">
@@ -54,9 +70,11 @@ function EsqueciSenha() {
                     <button className="login-btn" type="submit" disabled={enviando}>
                         {enviando ? "Enviando..." : "Enviar link de redefinição"}
                     </button>
-
-                    <Link to="/login">Voltar ao login</Link>
                 </form>
+
+                <p className="login-cadastro-link">
+                    <Link to="/login">← Voltar ao login</Link>
+                </p>
 
                 <div className="login-footer">
                     <p>© 2026 GRB Ofice — Todos os direitos reservados</p>

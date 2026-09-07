@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import LojaHeader from "../components/LojaHeader";
 import api from "../services/api";
+import { useToast } from "../components/ToastContext";
 import "../css/Loja.css";
 
 // Página de detalhe de um produto (estilo Mercado Livre), aberta ao
@@ -12,10 +13,21 @@ function LojaProduto() {
 
     const { id } = useParams();
     const navigate = useNavigate();
+    const showToast = useToast();
     const [peca, setPeca] = useState(null);
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState(false);
     const [adicionando, setAdicionando] = useState(false);
+    const [quantidade, setQuantidade] = useState(1);
+
+    function alterarQuantidade(delta) {
+        setQuantidade((atual) => Math.max(1, atual + delta));
+    }
+
+    function editarQuantidade(valor) {
+        const numero = parseInt(valor, 10);
+        setQuantidade(Number.isNaN(numero) ? 1 : Math.max(1, numero));
+    }
 
     useEffect(() => {
         async function carregar() {
@@ -47,15 +59,47 @@ function LojaProduto() {
 
         setAdicionando(true);
         try {
-            const response = await api.post("carrinho/itens/", { peca_id: peca.id, quantidade: 1 });
+            const response = await api.post("carrinho/itens/", { peca_id: peca.id, quantidade });
             if (response.data.success) {
+                // Pediu mais do que o estoque tinha: o backend compra o
+                // que dá e encomenda o resto sozinho (ver
+                // backend/pedidos/views.py::adicionar_item) — avisa o
+                // cliente com os detalhes antes de navegar.
+                if (response.data.encomenda_criada) {
+                    showToast(response.data.message, "info");
+                }
                 navigate("/carrinho");
             } else {
-                alert(response.data.message);
+                showToast(response.data.message, "error");
             }
         } catch (error) {
             console.log(error);
-            alert("Erro ao adicionar ao carrinho");
+            showToast("Erro ao adicionar ao carrinho", "error");
+        } finally {
+            setAdicionando(false);
+        }
+    }
+
+    async function encomendar() {
+        const usuarioLogado = localStorage.getItem("usuario");
+
+        if (!usuarioLogado) {
+            navigate(`/login?next=/produto/${id}`);
+            return;
+        }
+
+        setAdicionando(true);
+        try {
+            const response = await api.post("encomendas/", { peca_id: peca.id, quantidade });
+            if (response.data.success) {
+                showToast("Encomenda registrada! Acompanhe o status em Histórico de Compras.", "success");
+                navigate("/historico-compras");
+            } else {
+                showToast(response.data.message, "error");
+            }
+        } catch (error) {
+            console.log(error);
+            showToast("Erro ao registrar encomenda", "error");
         } finally {
             setAdicionando(false);
         }
@@ -89,25 +133,60 @@ function LojaProduto() {
                                 <span className="loja-card-categoria">{peca.categoria_nome}</span>
                             )}
                             <h1>{peca.nome}</h1>
-                            <p className="loja-produto-codigo">Código: {peca.codigo}</p>
 
                             <p className="loja-produto-preco">
                                 R$ {Number(peca.preco).toFixed(2)}
                             </p>
 
-                            {!peca.disponivel && (
-                                <span className="loja-card-esgotado" style={{ position: "static", display: "inline-block", marginBottom: "12px" }}>
-                                    Esgotado
-                                </span>
-                            )}
+                            <p className={`loja-produto-disponibilidade ${peca.disponivel ? "disponivel" : "esgotado"}`}>
+                                {peca.disponivel ? "Em estoque" : "Esgotado — disponível para encomenda"}
+                            </p>
 
-                            <button
-                                className="loja-btn-primary loja-produto-comprar"
-                                onClick={comprar}
-                                disabled={!peca.disponivel || adicionando}
-                            >
-                                {!peca.disponivel ? "Indisponível" : adicionando ? "Adicionando..." : "Comprar"}
-                            </button>
+                            <div className="loja-produto-quantidade-linha">
+                                <label htmlFor="quantidade">Quantidade</label>
+                                <div className="loja-stepper">
+                                    <button
+                                        type="button"
+                                        onClick={() => alterarQuantidade(-1)}
+                                        disabled={quantidade <= 1}
+                                        aria-label="Diminuir quantidade"
+                                    >
+                                        −
+                                    </button>
+                                    <input
+                                        id="quantidade"
+                                        type="number"
+                                        min="1"
+                                        value={quantidade}
+                                        onChange={(e) => editarQuantidade(e.target.value)}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => alterarQuantidade(1)}
+                                        aria-label="Aumentar quantidade"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+
+                            {peca.disponivel ? (
+                                <button
+                                    className="loja-btn-primary loja-produto-comprar"
+                                    onClick={comprar}
+                                    disabled={adicionando}
+                                >
+                                    {adicionando ? "Adicionando..." : "Comprar"}
+                                </button>
+                            ) : (
+                                <button
+                                    className="loja-btn-primary loja-produto-comprar"
+                                    onClick={encomendar}
+                                    disabled={adicionando}
+                                >
+                                    {adicionando ? "Enviando..." : "Encomendar"}
+                                </button>
+                            )}
 
                             <div className="loja-produto-descricao">
                                 <h2>Descrição</h2>

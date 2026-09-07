@@ -54,8 +54,50 @@ Estado em 2026-08-04: nove rodadas de trabalho concluídas nesta sessão:
    de compras completo, persistido no banco por usuário (app novo
    `pedidos`: `Carrinho`/`ItemCarrinho`/`Pedido`/`ItemPedido`), com
    finalização de pedido transacional (decrementa estoque, snapshot de
-   preço/nome pro histórico não mudar retroativamente) — sem gateway de
-   pagamento real, fora do escopo do TCC.
+   preço/nome pro histórico não mudar retroativamente).
+
+10. Início do roadmap final (`.claude/docs/roadmap-final.md`, comparação
+    com o TDS do TCC): **Item 1 — Fluxo de Encomenda (RF07/RF08)**
+    completo — cliente encomenda peça sem estoque (`Encomenda`, app
+    `pedidos`), equipe aprova/recusa numa tela dedicada (`/encomendas`),
+    aprovar soma a quantidade ao estoque pra viabilizar a compra depois.
+    Além do item do roadmap, duas melhorias pedidas durante o teste
+    manual: (a) sistema de notificação (`ToastContext`/`useToast`)
+    substituindo todo `alert()` nativo do projeto; (b) checkout via
+    **Stripe Checkout** em modo teste substituindo o antigo
+    `POST /api/carrinho/finalizar/` direto — agora o carrinho redireciona
+    pro Stripe, e o `Pedido` só é criado depois de confirmar o pagamento
+    na página de retorno (`/pagamento-sucesso`). Pagamento simulado
+    (chaves de teste), mas o fluxo é real — ver known-issues.md pros
+    detalhes e limitações (sem webhook, sem gateway de produção).
+    Refinamentos adicionais durante o teste manual: (c) `Encomenda` ganhou
+    status `concluida` — vínculo `ItemCarrinho.encomenda`/
+    `ItemPedido.encomenda` marca a encomenda como concluída quando o
+    pagamento do "Comprar agora" é confirmado, em vez de ficar presa em
+    "aprovada" pra sempre; (d) `adicionar_item` agora lida com pedir mais
+    unidades do que há em estoque comprando o disponível e encomendando o
+    excedente automaticamente (flexibiliza a regra original de RF07 — ver
+    known-issues.md); (e) página de produto (`LojaProduto.jsx`) reformulada
+    com seletor de quantidade (stepper -/input/+) e layout mais organizado.
+
+11. **Item 2 — Reserva (RF06)** completo. Decisão confirmada com o
+    usuário: reserva **sem prazo de expiração** — `Pedido` ganhou o
+    status `reservado` (`POST /api/carrinho/reservar/`, reaproveitando a
+    mesma lógica de finalização do checkout, sem passar pelo Stripe).
+    Nova tela `/reservas` (equipe) lista reservas ativas de todos os
+    clientes e cancela manualmente (devolve o estoque) — única forma de
+    liberar uma reserva parada, já que não há expiração automática.
+    `HistoricoCompras.jsx` agora mostra o status de cada pedido (Pago/
+    Reservado/Cancelado). Duas melhorias adicionais pedidas no teste
+    manual: (a) `ConfirmContext`/`useConfirm` — modal de confirmação
+    estilizado substituindo todo `window.confirm()` nativo do projeto
+    (mesmo espírito do `ToastContext` do Item 1); (b) a Reserva agora é
+    **opcional/configurável** — `ConfiguracaoSistema` (model singleton,
+    `GET`/`PATCH /api/configuracoes/`) com um toggle em nova tela
+    `/configuracoes` (só admin) que liga/desliga a funcionalidade a
+    qualquer momento; desligado, o botão "Reservar" some do carrinho **e**
+    o backend recusa `POST /api/carrinho/reservar/` (não é só uma máscara
+    visual).
 
 Durante os testes manuais (feitos pelo usuário no navegador), apareceram e
 foram corrigidos vários bugs reais — ver `known-issues.md`, seção "Resolvido".
@@ -64,8 +106,9 @@ foram corrigidos vários bugs reais — ver `known-issues.md`, seção "Resolvid
 
 - **Backend**: Django 6.0.5 + Django REST Framework 3.17.1, MySQL (via
   mysqlclient), django-cors-headers, PyJWT (autenticação), google-auth
-  (verificação do login Google), python-decouple (config via `.env`),
-  Pillow (upload de imagem). Apps: `usuarios` (contas), `catalogo`
+  (verificação do login Google), stripe (checkout/pagamento simulado),
+  python-decouple (config via `.env`), Pillow (upload de imagem). Apps:
+  `usuarios` (contas), `catalogo`
   (peças/categorias/fornecedores, + endpoints públicos da vitrine),
   `auditoria` (log de atividades) e `pedidos` (carrinho e pedidos).
 - **Frontend**: Create React App, React 19.2.6, react-router-dom 7.15.1, axios 1.16.1.
@@ -165,12 +208,21 @@ frontend/
   `GET /api/logs/` retorna — quem fez o quê e quando, no catálogo e na
   gestão de usuários.
 - **Vitrine pública** (`/`, sem login): grid de produtos estilo Mercado
-  Livre + página de detalhe (`/produto/:id`); "Comprar" exige login.
+  Livre + página de detalhe (`/produto/:id`); "Comprar" exige login,
+  "Encomendar" aparece no lugar quando a peça está sem estoque (RF07).
 - **Área do cliente** (`/minha-conta`, `/carrinho`, `/historico-compras`,
   qualquer logado): informações pessoais, carrinho de compras persistido
-  no banco (adicionar/alterar quantidade/remover/finalizar pedido) e
-  histórico de pedidos já finalizados. Cliente (`tipo === "cliente"`) não
-  tem acesso às telas de gestão acima — só equipe (`adm`/`funcionario`).
+  no banco (adicionar/alterar quantidade/remover), checkout via **Stripe
+  Checkout** em modo teste (`/pagamento-sucesso` confirma o pagamento e
+  só então cria o pedido) ou "Reservar" (sem pagamento, sem prazo,
+  RF06), histórico de pedidos já finalizados (com status Pago/Reservado/
+  Cancelado) e das próprias encomendas (com botão "Comprar agora" quando
+  aprovada). Cliente (`tipo === "cliente"`) não tem acesso às telas de
+  gestão acima — só equipe (`adm`/`funcionario`).
+- **Tela de Encomendas** (`/encomendas`, equipe com `PodeGerenciarPecas`):
+  fila de encomendas pendentes (RF07), aprovar/recusar (RF08).
+- **Tela de Reservas** (`/reservas`, equipe com `PodeGerenciarPecas`):
+  reservas ativas de todos os clientes (RF06), cancelar devolve o estoque.
 
 Para detalhes de implementação, ver [backend.md](backend.md) e
 [frontend.md](frontend.md). Para bugs e pontos de atenção conhecidos, ver

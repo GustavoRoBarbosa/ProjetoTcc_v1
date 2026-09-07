@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import api from "../services/api";
+import { useToast } from "../components/ToastContext";
+import { useConfirm } from "../components/ConfirmContext";
 import "../css/Dashboard.css";
 import "../css/Catalogo.css";
 
@@ -18,6 +20,8 @@ const FORM_VAZIO = { nome: "", descricao: "" };
 function Categorias() {
 
     const usuario = JSON.parse(localStorage.getItem("usuario"));
+    const showToast = useToast();
+    const confirm = useConfirm();
     const [categorias, setCategorias] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [mostrarForm, setMostrarForm] = useState(false);
@@ -31,7 +35,7 @@ function Categorias() {
             setCategorias(response.data);
         } catch (error) {
             console.log(error);
-            alert("Erro ao carregar categorias");
+            showToast("Erro ao carregar categorias", "error");
         } finally {
             setCarregando(false);
         }
@@ -70,18 +74,18 @@ function Categorias() {
             carregar();
         } catch (error) {
             console.log(error);
-            alert("Erro ao salvar categoria (verifique se o nome já existe e se a descrição foi preenchida)");
+            showToast("Erro ao salvar categoria (verifique se o nome já existe e se a descrição foi preenchida)", "error");
         }
     }
 
     async function excluirCategoria(id) {
-        if (!window.confirm("Excluir esta categoria? Só é possível se não houver peças vinculadas a ela.")) return;
+        if (!await confirm("Excluir esta categoria? Só é possível se não houver peças vinculadas a ela.")) return;
         try {
             await api.delete(`categorias/${id}/`);
             carregar();
         } catch (error) {
             console.log(error);
-            alert("Erro ao excluir categoria (pode haver peças vinculadas a ela)");
+            showToast("Erro ao excluir categoria (pode haver peças vinculadas a ela)", "error");
         }
     }
 

@@ -48,20 +48,34 @@ function ConfirmarEmail() {
                     <p className="login-subtitle">Confirmação de cadastro</p>
                 </div>
 
-                <div style={{ textAlign: "center", padding: "12px 0" }}>
-                    {status === "carregando" && <p>Confirmando seu email...</p>}
-                    {status !== "carregando" && <p>{mensagem}</p>}
-                </div>
+                {status === "carregando" && (
+                    <div className="confirmar-email-status">
+                        <span className="confirmar-email-spinner" aria-hidden="true" />
+                        <p>Confirmando seu email...</p>
+                    </div>
+                )}
 
                 {status === "sucesso" && (
-                    <Link to="/login" className="login-btn" style={{ display: "block", textAlign: "center", textDecoration: "none" }}>
+                    <div className="login-alerta login-alerta-aviso" role="status">
+                        {mensagem}
+                    </div>
+                )}
+
+                {status === "erro" && (
+                    <div className="login-alerta login-alerta-erro" role="alert">
+                        {mensagem}
+                    </div>
+                )}
+
+                {status === "sucesso" && (
+                    <Link to="/login" className="login-btn confirmar-email-btn">
                         Ir para o login
                     </Link>
                 )}
 
                 {status === "erro" && (
-                    <p style={{ textAlign: "center" }}>
-                        <Link to="/cadastro">Voltar ao cadastro</Link>
+                    <p className="login-cadastro-link">
+                        <Link to="/cadastro">← Voltar ao cadastro</Link>
                     </p>
                 )}
             </div>

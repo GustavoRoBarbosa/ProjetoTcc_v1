@@ -18,6 +18,9 @@ function Login() {
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
     const [mostrarSenha, setMostrarSenha] = useState(false);
+    const [entrando, setEntrando] = useState(false);
+    const [erro, setErro] = useState("");
+    const [aviso, setAviso] = useState("");
 
     // Guarda os dados de login (usuario + tokens) e navega pro painel —
     // usado tanto pelo login normal quanto pelo login com Google, já que
@@ -43,6 +46,12 @@ function Login() {
 
         e.preventDefault();
 
+        if (entrando) return;
+
+        setErro("");
+        setAviso("");
+        setEntrando(true);
+
         try {
 
             const response = await api.post("login/", {
@@ -57,25 +66,29 @@ function Login() {
                 guardarSenhaDigitada(senha);
                 entrarComSucesso(response.data);
             } else {
-                alert(response.data.message);
+                setErro(response.data.message);
+                setEntrando(false);
             }
         } catch (error) {
             console.log(error);
-            alert("Erro ao conectar com o servidor");
+            setErro("Erro ao conectar com o servidor.");
+            setEntrando(false);
         }
     }
 
     async function reenviarConfirmacao() {
         if (!email) {
-            alert("Digite seu email no campo acima primeiro.");
+            setErro("Digite seu email no campo acima primeiro.");
             return;
         }
+        setErro("");
+        setAviso("");
         try {
             const response = await api.post("reenviar-confirmacao/", { email });
-            alert(response.data.message);
+            setAviso(response.data.message);
         } catch (error) {
             console.log(error);
-            alert("Erro ao conectar com o servidor");
+            setErro("Erro ao conectar com o servidor.");
         }
     }
 
@@ -98,11 +111,11 @@ function Login() {
                     if (apiResponse.data.success) {
                         entrarComSucesso(apiResponse.data);
                     } else {
-                        alert(apiResponse.data.message);
+                        setErro(apiResponse.data.message);
                     }
                 } catch (error) {
                     console.log(error);
-                    alert("Erro ao conectar com o servidor");
+                    setErro("Erro ao conectar com o servidor.");
                 }
             },
         });
@@ -118,6 +131,14 @@ function Login() {
 
     return (
         <div className="login-page">
+            <Link to="/" className="login-voltar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 12H5" />
+                    <path d="M12 19l-7-7 7-7" />
+                </svg>
+                Voltar à loja
+            </Link>
+
             <div className="login-card">
 
                 <div className="login-brand">
@@ -125,8 +146,20 @@ function Login() {
                         <span>G</span>
                     </div>
                     <h1 className="login-title">GRB OFICE</h1>
-                    <p className="login-subtitle">Faça login para acessar o painel</p>
+                    <p className="login-subtitle">Faça login para acessar sua conta</p>
                 </div>
+
+                {erro && (
+                    <div className="login-alerta login-alerta-erro" role="alert">
+                        {erro}
+                    </div>
+                )}
+
+                {aviso && (
+                    <div className="login-alerta login-alerta-aviso" role="status">
+                        {aviso}
+                    </div>
+                )}
 
                 <form className="login-form" onSubmit={fazerLogin}>
                     <div className="input-group">
@@ -137,6 +170,7 @@ function Login() {
                             placeholder="Digite seu email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            autoComplete="email"
                         />
                     </div>
 
@@ -149,6 +183,7 @@ function Login() {
                                 placeholder="Digite sua senha"
                                 value={senha}
                                 onChange={(e) => setSenha(e.target.value)}
+                                autoComplete="current-password"
                             />
                             <button
                                 type="button"
@@ -157,39 +192,48 @@ function Login() {
                                 aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
                                 tabIndex={-1}
                             >
-                                {mostrarSenha ? "🙈" : "👁"}
+                                {mostrarSenha ? (
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                        <path d="M1 1l22 22" />
+                                    </svg>
+                                ) : (
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
+                                        <circle cx="12" cy="12" r="3" />
+                                    </svg>
+                                )}
                             </button>
                         </div>
-                    </div>
-
-                    <button className="login-btn" type="submit">
-                        Entrar
-                    </button>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: "4px", alignItems: "center" }}>
-                        <button
-                            type="button"
-                            onClick={reenviarConfirmacao}
-                            style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", textDecoration: "underline", fontSize: "13px" }}
-                        >
-                            Não recebeu o email de confirmação? Reenviar
-                        </button>
-
-                        <Link to="/esqueci-senha" style={{ fontSize: "13px", textDecoration: "underline" }}>
+                        <Link to="/esqueci-senha" className="login-link-inline login-esqueci-senha">
                             Esqueci minha senha
                         </Link>
                     </div>
 
-                    <div ref={googleBotaoRef} style={{ display: "flex", justifyContent: "center", margin: "8px 0" }} />
+                    <button className="login-btn" type="submit" disabled={entrando}>
+                        {entrando ? "Entrando..." : "Entrar"}
+                    </button>
 
-                    <Link to="/cadastro">
-                        Cadastre-se
-                    </Link>
+                    <button
+                        type="button"
+                        onClick={reenviarConfirmacao}
+                        className="login-link-inline login-reenviar"
+                    >
+                        Não recebeu o email de confirmação? Reenviar
+                    </button>
 
-                    <Link to="/" style={{ fontSize: "13px" }}>
-                        ← Voltar à loja
-                    </Link>
+                    {process.env.REACT_APP_GOOGLE_CLIENT_ID && (
+                        <div className="login-divisor">
+                            <span>ou continue com</span>
+                        </div>
+                    )}
+
+                    <div ref={googleBotaoRef} className="login-google-botao" />
                 </form>
+
+                <p className="login-cadastro-link">
+                    Ainda não tem uma conta? <Link to="/cadastro">Cadastre-se</Link>
+                </p>
 
                 <div className="login-footer">
                     <p>© 2026 GRB Ofice — Todos os direitos reservados</p>

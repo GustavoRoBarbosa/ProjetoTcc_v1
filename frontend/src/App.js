@@ -13,15 +13,23 @@ import Categorias from "./pages/Categorias";
 import Fornecedores from "./pages/Fornecedores";
 import Usuarios from "./pages/Usuarios";
 import Logs from "./pages/Logs";
+import Encomendas from "./pages/Encomendas";
+import Reservas from "./pages/Reservas";
+import Configuracoes from "./pages/Configuracoes";
 import ContaCliente from "./pages/ContaCliente";
 import HistoricoCompras from "./pages/HistoricoCompras";
 import Carrinho from "./pages/Carrinho";
+import PagamentoSucesso from "./pages/PagamentoSucesso";
 import PrivateRoute from "./routes/PrivateRoute";
+import { ToastProvider } from "./components/ToastContext";
+import { ConfirmProvider } from "./components/ConfirmContext";
 
 function App() {
   return (
 
     <BrowserRouter>
+      <ToastProvider>
+      <ConfirmProvider>
 
       <Routes>
 
@@ -56,6 +64,13 @@ function App() {
           }
           />
 
+        <Route path="/pagamento-sucesso" element={
+          <PrivateRoute>
+          <PagamentoSucesso />
+          </PrivateRoute>
+          }
+          />
+
         {/* Telas de gestão — apenasEquipe manda cliente de volta pra
             /minha-conta em vez de mostrar essas telas (ver PrivateRoute.jsx). */}
         <Route path="/dashboard" element={
@@ -86,6 +101,20 @@ function App() {
           }
           />
 
+        <Route path="/encomendas" element={
+          <PrivateRoute apenasEquipe>
+          <Encomendas />
+          </PrivateRoute>
+          }
+          />
+
+        <Route path="/reservas" element={
+          <PrivateRoute apenasEquipe>
+          <Reservas />
+          </PrivateRoute>
+          }
+          />
+
         <Route path="/usuarios" element={
           <PrivateRoute apenasEquipe>
           <Usuarios />
@@ -100,8 +129,17 @@ function App() {
           }
           />
 
+        <Route path="/configuracoes" element={
+          <PrivateRoute apenasEquipe>
+          <Configuracoes />
+          </PrivateRoute>
+          }
+          />
+
       </Routes>
 
+      </ConfirmProvider>
+      </ToastProvider>
     </BrowserRouter>
 
   );

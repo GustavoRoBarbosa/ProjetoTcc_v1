@@ -10,31 +10,42 @@ function Cadastro() {
     const [nome, setNome] = useState("");
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
+    const [confirmarSenha, setConfirmarSenha] = useState("");
     const [telefone, setTelefone] = useState("");
     const [mostrarSenha, setMostrarSenha] = useState(false);
+    const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
+    const [erro, setErro] = useState("");
+    const [sucesso, setSucesso] = useState("");
+    const [enviando, setEnviando] = useState(false);
+
+    const regexNome = /^[A-Za-zÀ-ÖØ-öø-ÿ\s]*$/;
 
     async function cadastrarUsuario(e) {
 
         e.preventDefault();
 
+        if (enviando) return;
+
+        setErro("");
+        setSucesso("");
+
         if (!nome.trim()) {
+            setErro("O nome é obrigatório.");
+            return;
+        }
 
-            alert("O nome é obrigatório");
-
+        if (!regexNome.test(nome)) {
+            setErro("O nome deve conter apenas letras.");
             return;
         }
 
         if (!email.trim()) {
-
-            alert("O email é obrigatório");
-
+            setErro("O email é obrigatório.");
             return;
         }
 
         if (!telefone.trim()) {
-
-            alert("O telefone é obrigatório");
-
+            setErro("O telefone é obrigatório.");
             return;
         }
 
@@ -42,16 +53,19 @@ function Cadastro() {
         const regexSenha = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
 
         if (!regexSenha.test(senha)) {
-            alert(
-            "A senha deve possuir:\n\n" +
-            "- 8 caracteres\n" +
-            "- letra maiúscula\n" +
-            "- letra minúscula\n" +
-            "- número\n" +
-            "- caractere especial"
+            setErro(
+                "A senha deve ter no mínimo 8 caracteres, incluindo letra " +
+                "maiúscula, letra minúscula, número e caractere especial."
             );
             return;
         }
+
+        if (senha !== confirmarSenha) {
+            setErro("As senhas não coincidem.");
+            return;
+        }
+
+        setEnviando(true);
 
         try {
 
@@ -66,15 +80,17 @@ function Cadastro() {
                 // A conta já existe, mas fica bloqueada pra login até o
                 // link do email ser clicado (ver backend/usuarios/views.py::cadastrar) —
                 // response.data.message já vem com essa instrução do backend.
-                alert(response.data.message);
-                navigate("/login");
+                setSucesso(response.data.message);
+                setTimeout(() => navigate("/login"), 2000);
             } else {
-                alert(response.data.message);
+                setErro(response.data.message);
+                setEnviando(false);
             }
 
         } catch (error) {
             console.log(error);
-            alert("Erro ao cadastrar");
+            setErro("Erro ao cadastrar. Tente novamente em instantes.");
+            setEnviando(false);
         }
     }
 
@@ -92,6 +108,18 @@ function Cadastro() {
 
                 <form className="cadastro-form" onSubmit={cadastrarUsuario}>
 
+                    {erro && (
+                        <div className="cadastro-alerta cadastro-alerta-erro" role="alert">
+                            {erro}
+                        </div>
+                    )}
+
+                    {sucesso && (
+                        <div className="cadastro-alerta cadastro-alerta-sucesso" role="status">
+                            {sucesso}
+                        </div>
+                    )}
+
                     <div className="input-group">
                         <label htmlFor="nome">Nome completo</label>
                         <input
@@ -99,7 +127,11 @@ function Cadastro() {
                             type="text"
                             placeholder="Digite seu nome"
                             value={nome}
-                            onChange={(e) => setNome(e.target.value)}
+                            onChange={(e) => {
+                                if (regexNome.test(e.target.value)) {
+                                    setNome(e.target.value);
+                                }
+                            }}
                             required
                         />
                     </div>
@@ -141,30 +173,53 @@ function Cadastro() {
                         </div>
 
                         <div className="input-group">
-                            <label htmlFor="telefone">Telefone</label>
-                            <input
-                                id="telefone"
-                                type="text"
-                                placeholder="(00) 00000-0000"
-                                maxLength={15}
-                                value={telefone}
-                                onChange={(e) => {let valor = e.target.value;
-
-                                    valor = valor.replace(/\D/g, '');
-
-                                    valor = valor.replace(/^(\d{2})(\d)/g, '($1) $2');
-
-                                    valor = valor.replace(/(\d{5})(\d)/, '$1-$2');
-
-                                    setTelefone(valor);
-                                }}
-                                required
-                            />
+                            <label htmlFor="confirmarSenha">Confirme sua senha</label>
+                            <div className="senha-wrapper">
+                                <input
+                                    id="confirmarSenha"
+                                    type={mostrarConfirmarSenha ? "text" : "password"}
+                                    placeholder="Repita a senha"
+                                    value={confirmarSenha}
+                                    onChange={(e) => setConfirmarSenha(e.target.value)}
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    className="btn-mostrar-senha"
+                                    onClick={() => setMostrarConfirmarSenha(!mostrarConfirmarSenha)}
+                                    aria-label={mostrarConfirmarSenha ? "Ocultar senha" : "Mostrar senha"}
+                                    tabIndex={-1}
+                                >
+                                    {mostrarConfirmarSenha ? "🙈" : "👁"}
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <button className="cadastro-btn" type="submit">
-                        Cadastrar
+                    <div className="input-group">
+                        <label htmlFor="telefone">Telefone</label>
+                        <input
+                            id="telefone"
+                            type="text"
+                            placeholder="(00) 00000-0000"
+                            maxLength={15}
+                            value={telefone}
+                            onChange={(e) => {let valor = e.target.value;
+
+                                valor = valor.replace(/\D/g, '');
+
+                                valor = valor.replace(/^(\d{2})(\d)/g, '($1) $2');
+
+                                valor = valor.replace(/(\d{5})(\d)/, '$1-$2');
+
+                                setTelefone(valor);
+                            }}
+                            required
+                        />
+                    </div>
+
+                    <button className="cadastro-btn" type="submit" disabled={enviando}>
+                        {enviando ? "Cadastrando..." : "Cadastrar"}
                     </button>
 
                     <p className="cadastro-login-link">

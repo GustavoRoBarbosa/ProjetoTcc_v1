@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import api from "../services/api";
+import { useToast } from "../components/ToastContext";
+import { useConfirm } from "../components/ConfirmContext";
 import "../css/Dashboard.css";
 import "../css/Catalogo.css";
 
@@ -14,6 +16,8 @@ function ehAdmin(usuario) {
 function Usuarios() {
 
     const usuarioLogado = JSON.parse(localStorage.getItem("usuario"));
+    const showToast = useToast();
+    const confirm = useConfirm();
     const [usuarios, setUsuarios] = useState([]);
     const [carregando, setCarregando] = useState(true);
 
@@ -24,7 +28,7 @@ function Usuarios() {
             setUsuarios(response.data);
         } catch (error) {
             console.log(error);
-            alert("Erro ao carregar usuários");
+            showToast("Erro ao carregar usuários", "error");
         } finally {
             setCarregando(false);
         }
@@ -38,7 +42,7 @@ function Usuarios() {
         const novoValor = !usuarioAlvo.pode_gerenciar_pecas;
         const acaoTexto = novoValor ? "conceder" : "revogar";
 
-        if (!window.confirm(`Confirma ${acaoTexto} acesso ao catálogo para ${usuarioAlvo.nome}?`)) return;
+        if (!await confirm(`Confirma ${acaoTexto} acesso ao catálogo para ${usuarioAlvo.nome}?`)) return;
 
         try {
             await api.patch(`usuarios/${usuarioAlvo.id}/permissao-pecas/`, {
@@ -47,7 +51,7 @@ function Usuarios() {
             carregar();
         } catch (error) {
             console.log(error);
-            alert("Erro ao alterar permissão");
+            showToast("Erro ao alterar permissão", "error");
         }
     }
 

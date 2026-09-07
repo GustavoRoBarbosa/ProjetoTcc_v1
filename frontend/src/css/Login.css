@@ -3,6 +3,7 @@
 .login-page {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   background:
@@ -40,13 +41,33 @@
   pointer-events: none;
 }
 
+/* Voltar à loja */
+.login-voltar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 8px 4px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: var(--transition);
+  z-index: 1;
+}
+
+.login-voltar:hover {
+  color: var(--primary);
+  transform: translateX(-2px);
+}
+
 /* Card */
 .login-card {
   position: relative;
   background: var(--bg-card);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  padding: 48px 40px;
+  padding: 44px 40px 36px;
   width: 100%;
   max-width: 420px;
   text-align: center;
@@ -100,15 +121,67 @@
 .login-subtitle {
   font-size: 14px;
   color: var(--text-secondary);
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   font-weight: 400;
+}
+
+/* Alertas de erro/aviso do formulário */
+.login-alerta {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  line-height: 1.5;
+  text-align: left;
+  font-weight: 500;
+  animation: loginAlertaEntrance 0.25s ease both;
+}
+
+.login-alerta::before {
+  flex-shrink: 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.login-alerta-erro {
+  background: #fdecea;
+  border: 1px solid #f3b4ad;
+  color: #a02622;
+}
+
+.login-alerta-erro::before {
+  content: '⚠';
+}
+
+.login-alerta-aviso {
+  background: #eaf2fd;
+  border: 1px solid #a9c9f0;
+  color: #1c4e8a;
+}
+
+.login-alerta-aviso::before {
+  content: 'ℹ';
+}
+
+@keyframes loginAlertaEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Form */
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .input-group {
@@ -123,6 +196,12 @@
   color: var(--text-secondary);
   margin-bottom: 6px;
   letter-spacing: 0.02em;
+}
+
+.login-esqueci-senha {
+  display: block;
+  margin-top: 8px;
+  text-align: right;
 }
 
 .input-group input {
@@ -149,11 +228,38 @@
   box-shadow: 0 0 0 4px var(--primary-glow);
 }
 
+/* Links de texto (esqueci senha, reenviar confirmação) */
+.login-link-inline {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.login-link-inline:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
+.login-reenviar {
+  align-self: center;
+  white-space: normal;
+  text-align: center;
+  font-size: 13px;
+  margin-top: -4px;
+}
+
 /* Button */
 .login-btn {
   width: 100%;
   padding: 14px 24px;
-  margin-top: 8px;
+  margin-top: 4px;
   border: none;
   border-radius: var(--radius-sm);
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
@@ -190,17 +296,98 @@
   transform: translateY(0);
 }
 
+.login-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Divisor "ou continue com" */
+.login-divisor {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 2px 0 -4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.login-divisor::before,
+.login-divisor::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.login-google-botao {
+  display: flex;
+  justify-content: center;
+}
+
+/* Link de cadastro (fora do form, mais visível) */
+.login-cadastro-link {
+  margin-top: 22px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.login-cadastro-link a {
+  color: var(--primary);
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.login-cadastro-link a:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
 /* Footer */
 .login-footer {
-  margin-top: 28px;
+  margin-top: 20px;
   font-size: 12px;
   color: var(--text-muted);
+}
+
+/* Status de confirmação de email */
+.confirmar-email-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0 24px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.confirmar-email-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: confirmarEmailSpin 0.8s linear infinite;
+}
+
+@keyframes confirmarEmailSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.confirmar-email-btn {
+  display: block;
+  text-align: center;
+  text-decoration: none;
 }
 
 /* Responsive */
 @media (max-width: 480px) {
   .login-card {
-    padding: 36px 24px;
+    padding: 32px 22px 28px;
   }
 
   .login-title {

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import api from "../services/api";
+import { useToast } from "../components/ToastContext";
+import { useConfirm } from "../components/ConfirmContext";
 import "../css/Dashboard.css";
 import "../css/Catalogo.css";
 
@@ -25,6 +27,8 @@ function Pecas() {
 
     const usuario = JSON.parse(localStorage.getItem("usuario"));
     const gerencia = podeGerenciar(usuario);
+    const showToast = useToast();
+    const confirm = useConfirm();
 
     const [pecas, setPecas] = useState([]);
     const [categorias, setCategorias] = useState([]);
@@ -48,7 +52,7 @@ function Pecas() {
             setFornecedores(fornecedoresResp.data);
         } catch (error) {
             console.log(error);
-            alert("Erro ao carregar o catálogo de peças");
+            showToast("Erro ao carregar o catálogo de peças", "error");
         } finally {
             setCarregando(false);
         }
@@ -99,11 +103,11 @@ function Pecas() {
         // não exigimos escolher uma imagem nova: se nada for selecionado,
         // a imagem já salva continua valendo.
         if (!form.categoria || !form.fornecedor) {
-            alert("Selecione a categoria e o fornecedor da peça.");
+            showToast("Selecione a categoria e o fornecedor da peça.", "error");
             return;
         }
         if (!editandoId && !imagem) {
-            alert("Selecione uma imagem para a peça.");
+            showToast("Selecione uma imagem para a peça.", "error");
             return;
         }
 
@@ -129,18 +133,18 @@ function Pecas() {
             carregarTudo();
         } catch (error) {
             console.log(error);
-            alert("Erro ao salvar peça (confira o código, ele precisa ser único)");
+            showToast("Erro ao salvar peça (confira o código, ele precisa ser único)", "error");
         }
     }
 
     async function excluirPeca(id) {
-        if (!window.confirm("Excluir esta peça do catálogo?")) return;
+        if (!await confirm("Excluir esta peça do catálogo?")) return;
         try {
             await api.delete(`pecas/${id}/`);
             carregarTudo();
         } catch (error) {
             console.log(error);
-            alert("Erro ao excluir peça");
+            showToast("Erro ao excluir peça", "error");
         }
     }
 
