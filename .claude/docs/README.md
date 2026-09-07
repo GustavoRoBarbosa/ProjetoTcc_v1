@@ -1,5 +1,7 @@
 # ProjetoTcc_v1 — Documentação para Claudes futuros
 
+[![CI](https://github.com/GustavoRoBarbosa/ProjetoTcc_v1/actions/workflows/ci.yml/badge.svg)](https://github.com/GustavoRoBarbosa/ProjetoTcc_v1/actions/workflows/ci.yml)
+
 Este diretório documenta o projeto inteiro para que qualquer instância do Claude
 consiga entender o sistema sem precisar re-explorar todo o código do zero.
 
