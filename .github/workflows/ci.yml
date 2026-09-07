@@ -26,6 +26,7 @@ jobs:
             DB_PASSWORD: root
             DB_HOST: 127.0.0.1
             DB_PORT: 3306
+            SECRET_KEY: chave-temporaria-para-ci
 
         steps:
             - name: Checkout do codigo
