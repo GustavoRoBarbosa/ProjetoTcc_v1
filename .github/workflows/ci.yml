@@ -50,3 +50,22 @@ jobs:
             - name: Build
               working-directory: ./backend
               run: python manage.py check --deploy
+
+    # Mesmos testes, mas rodando DENTRO dos containers (docker-compose.test.yml).
+    # Garante que a imagem Docker do backend funciona, não só o código na máquina do CI.
+    docker-test:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout do codigo
+              uses: actions/checkout@v4
+
+            - name: Rodar testes com Docker Compose
+              run: docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from tests
+
+            - name: Build da imagem do frontend
+              run: docker build -t tcc-frontend ./frontend
+
+            - name: Limpar containers de teste
+              if: always()
+              run: docker compose -f docker-compose.test.yml down -v

@@ -1,0 +1,75 @@
+# Ambiente completo do GRB Ofice: banco MySQL + API Django + site React (nginx)
+# Subir:   docker compose up -d --build
+# Parar:   docker compose down        (mantém os dados do banco no volume)
+# Zerar:   docker compose down -v     (APAGA os volumes / dados)
+
+services:
+
+  # ---------------- BANCO DE DADOS ----------------
+  db:
+    image: mysql:8.0
+    container_name: tcc-db
+    restart: unless-stopped            # se cair, o Docker reinicia sozinho (menos quando eu paro manualmente)
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-tcc}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}   # valor vem do .env da raiz; "root" é só o padrão de desenvolvimento
+    volumes:
+      - mysql-data:/var/lib/mysql      # dados do banco sobrevivem quando o container é recriado
+    networks:
+      - backend-net                    # só o backend enxerga o banco
+    healthcheck:                       # "está pronto para receber conexões?" (não só "o processo iniciou")
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ---------------- API (Django) ----------------
+  backend:
+    build: ./backend                   # usa o backend/Dockerfile
+    image: tcc-backend
+    container_name: tcc-backend
+    restart: unless-stopped
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-chave-de-desenvolvimento-troque-em-producao}
+      DEBUG: "True"
+      ALLOWED_HOSTS: "*"               # aceitável só em desenvolvimento (o endereço do Codespaces muda)
+      CORS_ALLOW_ALL_ORIGINS: "True"
+      DB_NAME: ${DB_NAME:-tcc}
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      DB_HOST: db                      # nome do serviço acima, NÃO "localhost"
+      DB_PORT: "3306"
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+    volumes:
+      - media-data:/app/media          # fotos das peças enviadas pelo admin
+    depends_on:
+      db:
+        condition: service_healthy     # espera o healthcheck do MySQL passar
+    networks:
+      - backend-net
+      - frontend-net
+
+  # ---------------- SITE (React + nginx) ----------------
+  frontend:
+    build: ./frontend                  # imagem da atividade passada (frontend/Dockerfile)
+    image: tcc-frontend
+    container_name: tcc-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"                      # única porta exposta para fora: porta 8080 do host -> 80 do nginx
+    depends_on:
+      - backend
+    networks:
+      - frontend-net
+
+# Redes separadas: o frontend fala com o backend, o backend fala com o banco,
+# mas o frontend NÃO tem acesso direto ao banco (princípio do menor privilégio).
+networks:
+  frontend-net:
+  backend-net:
+
+# Volumes nomeados: o Docker guarda esses dados fora dos containers.
+volumes:
+  mysql-data:
+  media-data:

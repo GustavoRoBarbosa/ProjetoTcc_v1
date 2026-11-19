@@ -1,7 +1,9 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: "http://127.0.0.1:8000/api/"
+    // No Docker o build define REACT_APP_API_URL="/api/" (o nginx repassa ao backend).
+    // Rodando com "npm start" fora do Docker, continua usando o backend local.
+    baseURL: process.env.REACT_APP_API_URL || "http://127.0.0.1:8000/api/"
 });
 
 // Endpoints públicos (não exigem — e não devem receber — token). Mandar

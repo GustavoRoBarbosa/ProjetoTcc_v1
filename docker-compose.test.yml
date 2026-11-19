@@ -1,0 +1,35 @@
+# Ambiente descartável só para rodar os testes automáticos (usado no CI)
+# Rodar:  docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from tests
+# Limpar: docker compose -f docker-compose.test.yml down -v
+
+services:
+
+  db-test:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: tcc
+      MYSQL_ROOT_PASSWORD: root
+    tmpfs:
+      - /var/lib/mysql                 # banco na memória RAM: mais rápido e some ao final (teste não precisa guardar nada)
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  tests:
+    build: ./backend                   # mesma imagem do backend de verdade
+    environment:
+      SECRET_KEY: chave-temporaria-para-testes
+      DEBUG: "False"
+      DB_NAME: tcc
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_HOST: db-test
+      DB_PORT: "3306"
+    depends_on:
+      db-test:
+        condition: service_healthy
+    command: python manage.py test --noinput   # roda os testes e o container termina
+    restart: "no"                      # teste roda uma vez só; se falhar, NÃO pode reiniciar
